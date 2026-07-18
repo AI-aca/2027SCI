@@ -2475,7 +2475,8 @@ function renderUserGuideContent() {
               <ul style="list-style: none; padding: 0; margin: 0;">
                 <li style="margin-bottom: 10px; font-size: 14px;"><i class="fa-solid fa-check" style="color: var(--color-success); margin-right: 8px;"></i> <strong>합불 갱신:</strong> 대시보드의 '합불 상태' 열을 클릭해 학생의 전형 결과를 실시간으로 변경하세요.</li>
                 <li style="margin-bottom: 10px; font-size: 14px;"><i class="fa-solid fa-check" style="color: var(--color-success); margin-right: 8px;"></i> <strong>학생 수정:</strong> 목록 우측 끝의 <code>[수정]</code> 버튼을 눌러 연락처나 담당 강사를 배정할 수 있습니다.</li>
-                <li style="font-size: 14px;"><i class="fa-solid fa-check" style="color: var(--color-success); margin-right: 8px;"></i> <strong>생기부 요약 열람:</strong> 학생의 <strong>생기부 점수</strong>를 클릭하면 AI가 요약한 핵심 3개 영역 분석창이 열립니다. (원본은 PDF 아이콘 클릭)</li>
+                <li style="margin-bottom: 10px; font-size: 14px;"><i class="fa-solid fa-check" style="color: var(--color-success); margin-right: 8px;"></i> <strong>생기부 요약 열람:</strong> 학생의 <strong>생기부 점수</strong>를 클릭하면 AI가 요약한 핵심 3개 영역 분석창이 열립니다. (원본은 PDF 아이콘 클릭)</li>
+                <li style="font-size: 14px; color: #ff9800;"><i class="fa-solid fa-triangle-exclamation" style="margin-right: 8px;"></i> <strong>생기부 업로드 관련 유의사항:</strong> &lt;반드시 3학년 1학기까지 완료된 생기부를 올리세요&gt;</li>
               </ul>
             </div>
           </div>
@@ -2513,7 +2514,8 @@ function renderUserGuideContent() {
           <div style="margin-bottom: 25px;">
             <h5 style="color: #fff; font-size: 15px; margin-bottom: 10px;"><i class="fa-solid fa-chart-pie" style="color: var(--color-danger); margin-right: 8px;"></i> 1. 생기부 정밀 분석 (23개 항목) 열람</h5>
             <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border-left: 3px solid var(--color-danger);">
-              <p style="font-size: 14px; margin-bottom: 0;">대시보드에서 <strong>생기부 점수</strong>를 클릭하면, 강사에게는 보이지 않는 <strong>23개 전체 평가 항목의 세부 점수와 AI 판단 근거</strong>가 기재된 정밀 모달창을 단독으로 열람할 수 있습니다.</p>
+              <p style="font-size: 14px; margin-bottom: 10px;">대시보드에서 <strong>생기부 점수</strong>를 클릭하면, 강사에게는 보이지 않는 <strong>23개 전체 평가 항목의 세부 점수와 AI 판단 근거</strong>가 기재된 정밀 모달창을 단독으로 열람할 수 있습니다.</p>
+              <p style="font-size: 14px; margin-bottom: 0; color: #ff9800;"><i class="fa-solid fa-triangle-exclamation" style="margin-right: 8px;"></i> <strong>생기부 업로드 관련 유의사항:</strong> &lt;반드시 3학년 1학기까지 완료된 생기부를 올리세요&gt;</p>
             </div>
           </div>
 
