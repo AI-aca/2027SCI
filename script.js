@@ -2487,7 +2487,7 @@ function renderUserGuideContent() {
             <ul style="list-style: none; padding: 0; margin: 0; margin-left: 5px;">
               <li style="margin-bottom: 8px; font-size: 14px;">① <strong>[자기소개서]</strong> 탭에서 첨삭할 학생 우측의 <code>[<i class="fa-solid fa-pen"></i> 자소서 첨삭]</code>(녹색 버튼)을 클릭합니다.</li>
               <li style="margin-bottom: 8px; font-size: 14px;">② 우측 화면 상단의 <strong>'문항별 피드백'</strong> 탭이 선택되어 있는지 확인합니다.</li>
-              <li style="font-size: 14px;">③ 지도 의견을 작성하고 화면 하단의 <code>[문항별 피드백 저장하기]</code> 버튼을 누르면 학생에게 즉시 연동됩니다.</li>
+              <li style="font-size: 14px;">③ 지도 의견을 작성하고 화면 하단의 <code>[피드백 저장]</code> 버튼을 누르면 학생에게 즉시 연동됩니다.</li>
             </ul>
           </div>
 
