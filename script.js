@@ -835,8 +835,8 @@ async function openPersonalStatementModal(studentPhone, initialTab = 'manual') {
   
   if (CURRENT_ROLE === '교사' || CURRENT_ROLE === '관리자') {
     txtArea.readOnly = true;
-    saveBtn.style.display = 'inline-block'; // 문항별 피드백 저장 허용
-    saveBtn.textContent = '문항별 피드백 저장하기';
+    saveBtn.style.display = 'inline-block'; // 피드백 일괄 저장 허용
+    saveBtn.textContent = '전체 피드백 일괄 저장';
     submitBtn.style.display = 'none';
     alertBox.style.display = 'none';
     
