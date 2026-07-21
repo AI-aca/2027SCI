@@ -696,3 +696,7 @@
 ## [2026-07-22] 인성 영역(영역 3) 감점 사유 요약 시 특정 분야 언급 차단
 - **작업 내용**: 영역별 주요 감점 사유 분석 중 [영역 3] 인성 감점 사유를 AI가 서술할 때, 봉사활동 및 음/미/체(음악, 미술, 체육) 관련 감점 내역은 입 밖으로 꺼내지 못하도록 족쇄(언급 절대 금지) 추가.
 - **결과**: Code.gs, [MD] AI PROMPT LOGIC.md, 생기부_채점_프롬프트...md 3곳 동시 업데이트 및 커밋 완료.
+
+## [2026-07-22 긴급 핫픽스] 신규 학생 등록 시 DriveApp.getFolderById 에러 수정
+- **원인**: 사용자가 설정(Settings) 시트의 drivePersonal(개인 폴더 URL) 등에 https://drive.google.com/drive/folders/... 형식의 구글 드라이브 폴더 URL을 입력했을 경우, 백엔드(Code.gs)의 extractIdFromUrl 함수가 /folders/ 패턴을 인식하지 못하고 전체 URL을 그대로 반환함. 이로 인해 DriveApp.getFolderById(전체URL)이 실행되어 치명적 예외 오류 발생.
+- **해결 방안**: Code.gs의 extractIdFromUrl 함수 내부에 /folders/ 문자열 파싱 정규식 조건을 추가하여, 폴더 URL에서도 정상적으로 ID만 추출할 수 있도록 보완 완료.
