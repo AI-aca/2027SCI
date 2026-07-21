@@ -2197,8 +2197,8 @@ async function openScoreDetailsModal(studentLink) {
       const finalScoreMath = res.totalScore || 0;
 
       // AI의 수학 연산 오류 강제 치환
-      cleanReport = cleanReport.replace(/\*\*학업역량.*\*\*.*점/g, '**학업역량 (195점 만점)**: ' + area1Math + ' 점');
-      cleanReport = cleanReport.replace(/\*\*진로적합성.*\*\*.*점/g, '**진로적합성 (90점 만점)**: ' + area2Math + ' 점');
+      cleanReport = cleanReport.replace(/\*\*학업역량.*\*\*.*점/g, '**학업역량 (210점 만점)**: ' + area1Math + ' 점');
+      cleanReport = cleanReport.replace(/\*\*진로적합성.*\*\*.*점/g, '**진로적합성 (75점 만점)**: ' + area2Math + ' 점');
       cleanReport = cleanReport.replace(/\*\*인성.*\*\*.*점/g, '**인성 (115점 만점)**: ' + area3Math + ' 점');
             cleanReport = cleanReport.replace(/\*\*🔥 종합 생기부 평가 점수\*\*:.*만점/g, '**🔥 종합 생기부 평가 점수**: ' + finalScoreMath + ' 점 / 400점 만점');
 
