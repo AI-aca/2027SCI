@@ -1165,3 +1165,15 @@ table.main-data-table tbody tr:hover {
 [onclick] {
   cursor: pointer !important;
 }
+
+
+/* 마크다운 모달(생기부 등) 내부 여백 최소화 */
+.modal-body hr {
+  margin: 15px 0 !important;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.modal-body h2 {
+  margin-top: 10px !important;
+  margin-bottom: 10px !important;
+}
