@@ -806,7 +806,7 @@ function openEditStudent(studentLink) {
 }
 
 /**
- * 29가지 생기부 점수 상세 아코디언 토글 렌더러
+ * 30가지 생기부 점수 상세 아코디언 토글 렌더러
  */
 function toggleScoreAccordion(studentLink, totalScore) {
   if (CURRENT_ROLE === '학생' || CURRENT_ROLE === '게스트') {
@@ -2148,7 +2148,7 @@ if (btnAddSchool) {
 }
 
 /**
- * 29가지 평가 항목 점수 산정근거 모달 열기
+ * 30가지 평가 항목 점수 산정근거 모달 열기
  */
 async function openScoreDetailsModal(studentLink) {
   if (CURRENT_ROLE === '학생' || CURRENT_ROLE === '게스트') {
@@ -2230,7 +2230,7 @@ async function openScoreDetailsModal(studentLink) {
 }
 
 /**
- * 29가지 평가 항목 산정근거 그리드 렌더러
+ * 30가지 평가 항목 산정근거 그리드 렌더러
  */
 function renderScoreBasisCards(cards) {
   const grid = document.getElementById('score-details-grid');
@@ -2516,9 +2516,9 @@ function renderUserGuideContent() {
           <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 25px;">관리자는 강사가 수행하는 모든 기능(문항별 피드백, 합불 갱신 등)을 기본적으로 사용할 수 있으며, 아래와 같은 최고 권한 기능이 추가로 부여됩니다.</p>
 
           <div style="margin-bottom: 25px;">
-            <h5 style="color: #fff; font-size: 15px; margin-bottom: 10px;"><i class="fa-solid fa-chart-pie" style="color: var(--color-danger); margin-right: 8px;"></i> 1. 생기부 정밀 분석 (29개 항목) 열람</h5>
+            <h5 style="color: #fff; font-size: 15px; margin-bottom: 10px;"><i class="fa-solid fa-chart-pie" style="color: var(--color-danger); margin-right: 8px;"></i> 1. 생기부 정밀 분석 (30개 항목) 열람</h5>
             <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border-left: 3px solid var(--color-danger);">
-              <p style="font-size: 14px; margin-bottom: 10px;">대시보드에서 <strong>생기부 점수</strong>를 클릭하면, 강사에게는 보이지 않는 <strong>29개 전체 평가 항목의 세부 점수와 AI 판단 근거</strong>가 기재된 정밀 모달창을 단독으로 열람할 수 있습니다.</p>
+              <p style="font-size: 14px; margin-bottom: 10px;">대시보드에서 <strong>생기부 점수</strong>를 클릭하면, 강사에게는 보이지 않는 <strong>30개 전체 평가 항목의 세부 점수와 AI 판단 근거</strong>가 기재된 정밀 모달창을 단독으로 열람할 수 있습니다.</p>
               <p style="font-size: 14px; margin-bottom: 0; color: #ff9800;"><i class="fa-solid fa-triangle-exclamation" style="margin-right: 8px;"></i> <strong>생기부 업로드 관련 유의사항:</strong> &lt;반드시 3학년 1학기까지 완료된 생기부를 올리세요&gt;</p>
             </div>
           </div>
