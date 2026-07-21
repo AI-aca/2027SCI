@@ -1839,6 +1839,7 @@ function bindEventHandlers() {
         'driveExam': document.getElementById('settings-drive-exam').value,
         'driveDb': document.getElementById('settings-drive-db').value,
         'driveBasis': document.getElementById('settings-drive-basis').value,
+        'driveParsing': document.getElementById('settings-drive-parsing').value,
         'centers': document.getElementById('settings-centers-list').value
       };
       
@@ -2020,6 +2021,7 @@ async function loadSettingsForm() {
     document.getElementById('settings-drive-exam').value = basic['driveExam'] || '';
     document.getElementById('settings-drive-db').value = basic['driveDb'] || '';
     document.getElementById('settings-drive-basis').value = basic['driveBasis'] || '';
+    document.getElementById('settings-drive-parsing').value = basic['driveParsing'] || '';
     
     // 드롭다운 업데이트
     updateTargetSchoolDropdowns(window.targetSchoolsList);
