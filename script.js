@@ -1604,8 +1604,8 @@ function bindEventHandlers() {
   document.getElementById('btn-close-ps-editor-modal').onclick = () => { if(confirm('저장하지 않은 내용은 모두 사라집니다. 정말 창을 닫으시겠습니까?')) { document.getElementById('modal-ps-editor').classList.remove('open'); } }
   document.getElementById('btn-close-interview-modal').onclick = () => { if(confirm('저장하지 않은 내용은 모두 사라집니다. 정말 창을 닫으시겠습니까?')) { document.getElementById('modal-interview-practice').classList.remove('open'); } }
   document.getElementById('btn-close-interview-practice-modal').onclick = () => { if(confirm('저장하지 않은 내용은 모두 사라집니다. 정말 창을 닫으시겠습니까?')) { document.getElementById('modal-interview-practice').classList.remove('open'); } }
-  document.getElementById('btn-close-score-details-modal').onclick = () => { if(confirm('저장하지 않은 내용은 모두 사라집니다. 정말 창을 닫으시겠습니까?')) { document.getElementById('modal-score-details').classList.remove('open'); } }
-  document.getElementById('btn-close-score-details-bottom').onclick = () => { if(confirm('저장하지 않은 내용은 모두 사라집니다. 정말 창을 닫으시겠습니까?')) { document.getElementById('modal-score-details').classList.remove('open'); } }
+  document.getElementById('btn-close-score-details-modal').onclick = () => { document.getElementById('modal-score-details').classList.remove('open'); }
+  document.getElementById('btn-close-score-details-bottom').onclick = () => { document.getElementById('modal-score-details').classList.remove('open'); }
   
   // 자소서 문항 및 버전 드롭다운 연동
   document.getElementById('ps-question-selector').onchange = (e) => {
