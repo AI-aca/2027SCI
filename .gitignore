@@ -1,6 +1,10 @@
-Code.gs
-API script.gs
-*.js.map
-scratch/
+# 1. 모든 파일 및 폴더 업로드 전면 차단 (블랙리스트)
+*
 
-*.md
+# 2. 프론트엔드 구동에 필수적인 단 3개의 파일만 업로드 허용 (화이트리스트)
+!index.html
+!style.css
+!script.js
+
+# 3. git 설정 파일 자체는 허용
+!.gitignore

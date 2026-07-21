@@ -2191,7 +2191,7 @@ async function openScoreDetailsModal(studentPhone) {
       const cardsForMath = res.scoreCards || [];
       let area1Math = 0; for(let i=0; i<12; i++) { if(cardsForMath[i]) area1Math += cardsForMath[i].score; }
       let area2Math = 0; for(let i=12; i<18; i++) { if(cardsForMath[i]) area2Math += cardsForMath[i].score; }
-      let area3Math = 0; for(let i=18; i<29; i++) { if(cardsForMath[i]) area3Math += cardsForMath[i].score; }
+      let area3Math = 0; for(let i=18; i<30; i++) { if(cardsForMath[i]) area3Math += cardsForMath[i].score; }
       const finalScoreMath = res.totalScore || 0;
 
       // AI의 수학 연산 오류 강제 치환
