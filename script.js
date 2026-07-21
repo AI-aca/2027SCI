@@ -1736,7 +1736,7 @@ function bindEventHandlers() {
             fileName: file.name
           });
           if (res.success) {
-            alert('생기부 PDF가 성공적으로 구글 드라이브에 업로드 되었습니다. (수동으로 재채점 버튼을 눌러야 AI 채점이 시작됩니다)');
+            alert('생기부 PDF가 성공적으로 구글 드라이브에 업로드 되었습니다. (수동으로 [AI 채점] 또는 [재채점] 버튼을 눌러야 분석이 시작됩니다)');
             loadStudentsData();
           } else {
             throw new Error(res.error);
