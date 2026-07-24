@@ -2239,17 +2239,25 @@ function renderScoreBasisCards(cards) {
   cards.forEach(spec => {
     const card = document.createElement('div');
     card.className = 'score-details-card';
-    card.innerHTML = `
-      <div>
-        <span class="score-badge">${spec.score} / ${spec.max} 점</span>
-        <h4>${spec.title}</h4>
-      </div>
-      <p style="font-size: 14px; color: var(--text-muted); margin: 6px 0;">${spec.desc}</p>
-      <div class="quote-box" style="margin-top: 8px; background: rgba(0,0,0,0.3); border-left: 3px solid var(--color-primary); padding: 8px; font-size: 14px; border-radius: 0 4px 4px 0;">
-        <i class="fa-solid fa-quote-left" style="font-size: 14px; opacity: 0.5; margin-right: 4px;"></i>
-        <span>${spec.quote}</span>
-      </div>
-    `;
+    
+    let quotesHtml = '';
+    if (Array.isArray(spec.quote) && spec.quote.length > 0) {
+      quotesHtml = '<ul style="margin:4px 0 0 20px; padding:0; list-style-type: disc; color: var(--color-primary);">' + 
+                   spec.quote.map(q => '<li>' + q + '</li>').join('') + 
+                   '</ul>';
+    } else {
+      quotesHtml = '<span>기록 없음</span>';
+    }
+
+    card.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+        '<h4>' + spec.title + '</h4>' +
+        '<span class="score-badge">' + spec.score + ' / ' + spec.max + ' 점</span>' +
+      '</div>' +
+      '<p style="font-size: 14px; color: var(--text-muted); margin: 6px 0;">' + spec.desc + '</p>' +
+      '<div class="quote-box" style="margin-top: 8px; background: rgba(0,0,0,0.3); border-left: 3px solid var(--color-primary); padding: 8px; font-size: 14px; border-radius: 0 4px 4px 0;">' +
+        '<i class="fa-solid fa-quote-left" style="font-size: 14px; opacity: 0.5; margin-right: 4px; float: left; margin-top: 2px;"></i>' +
+        '<div style="overflow: hidden;">' + quotesHtml + '</div>' +
+      '</div>';
     grid.appendChild(card);
   });
 }
