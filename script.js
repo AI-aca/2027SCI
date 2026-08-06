@@ -1366,7 +1366,7 @@ function bindPersonalStatementToSelector(qNum) {
       }
     } else {
       checklistContainer.innerHTML = `<div style="color: var(--text-muted); text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; line-height: 1.6; word-break: keep-all; padding: 10px;">
-        기재하면 절대 안되는 사항이나<br>질문의 핵심요점과 어울리지 않는지 등을 체크합니다.
+        🚫 기재하면 절대 안되는 사항이나<br>질문의 핵심요점과 어울리지 않는지 등을 체크합니다.<br><br>📝 적어도 자소서 초안이 입력되어야만,<br>선생님들이 확인하여 작성할 수 있습니다.
       </div>`;
       const chkTitle = checklistContainer.closest('.checklist-area').querySelector('h4');
       if (chkTitle) chkTitle.innerHTML = `항목별 체크리스트 확인하기`;
@@ -2231,7 +2231,7 @@ function bindEventHandlers() {
       const typeStr = '문항' + qNum + '_체크리스트';
       const res = await ApiClient.post('resetAIFeedback', { studentId: ACTIVE_PS_STUDENT, typeStr });
       if (res.success) {
-         document.getElementById('ai-checklist-container').innerHTML = '<div style="color: var(--text-muted); text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; line-height: 1.6; word-break: keep-all; padding: 10px;">기재하면 절대 안되는 사항이나<br>질문의 핵심요점과 어울리지 않는지 등을 체크합니다.</div>';
+         document.getElementById('ai-checklist-container').innerHTML = '<div style="color: var(--text-muted); text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; line-height: 1.6; word-break: keep-all; padding: 10px;">🚫 기재하면 절대 안되는 사항이나<br>질문의 핵심요점과 어울리지 않는지 등을 체크합니다.<br><br>📝 적어도 자소서 초안이 입력되어야만,<br>선생님들이 확인하여 작성할 수 있습니다.</div>';
          alert('초기화되었습니다.');
          if (typeof loadPersonalStatementData === 'function') {
            loadPersonalStatementData(ACTIVE_PS_STUDENT);
