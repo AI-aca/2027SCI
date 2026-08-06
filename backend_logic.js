@@ -677,7 +677,11 @@ async function evaluateStudentRecord(studentId, recordText) {
 async function parseStudentRecord(payload) {
   try {
     const studentId = payload.studentId || payload;
-    let { data: student } = await window.supabaseClient.from('students').select('*').or(`student_link.eq.${studentId},id.eq.${studentId}`).maybeSingle();
+    let { data: student } = await window.supabaseClient.from('students').select('*').eq('student_link', studentId).maybeSingle();
+    if (!student) {
+      const { data: studentById } = await window.supabaseClient.from('students').select('*').eq('id', studentId).maybeSingle();
+      student = studentById;
+    }
     if (!student) throw new Error('학생 정보를 수파베이스에서 찾을 수 없습니다.');
     
     const effectiveLink = student.student_link || student.id;
