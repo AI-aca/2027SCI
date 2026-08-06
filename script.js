@@ -340,7 +340,8 @@ function applyRoleUI(role) {
 }
 
 let PDF_TARGET_STUDENT = null;
-window.triggerPdfUpload = function(studentLink) {
+window.triggerPdfUpload = function(studentLink, isReupload) {
+  if (isReupload && !confirm('기존 생기부 파일이 이미 존재합니다. 재업로드하시면 기존 생기부가 덮어씌워집니다. 계속하시겠습니까?')) return;
   PDF_TARGET_STUDENT = studentLink;
   const fileInput = document.getElementById('student-record-pdf-input');
   if (fileInput) {
@@ -603,8 +604,9 @@ function renderMainTable() {
       }
       else if (col.key === 'recordUpload') {
         if (CURRENT_ROLE === '교사' || CURRENT_ROLE === '관리자') {
-          const btnText = student.recordPdf ? '재업로드' : '업로드';
-          td.innerHTML = `<button class="btn-action" style="padding: 2px 6px; font-size: 14px; display: inline-flex;" onclick="triggerPdfUpload('${student.studentLink}')"><i class="fa-solid fa-upload"></i> ${btnText}</button>`;
+          const isReupload = !!student.recordPdf;
+          const btnText = isReupload ? '재업로드' : '업로드';
+          td.innerHTML = `<button class="btn-action" style="padding: 2px 6px; font-size: 14px; display: inline-flex;" onclick="triggerPdfUpload('${student.studentLink}', ${isReupload})"><i class="fa-solid fa-upload"></i> ${btnText}</button>`;
         } else {
           td.innerHTML = `<span class="text-muted">-</span>`;
         }
@@ -1041,8 +1043,8 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual') {
   } else {
     const btnGen = document.getElementById('btn-generate-ai-checklist');
     const btnReset = document.getElementById('btn-reset-ai-checklist');
-    if (btnGen) btnGen.style.display = 'block';
-    if (btnReset) btnReset.style.display = 'block';
+    if (btnGen) btnGen.style.display = 'inline-block';
+    if (btnReset) btnReset.style.display = (CURRENT_ROLE === '관리자') ? 'inline-block' : 'none';
   }
   
   document.getElementById('modal-ps-editor').classList.add('open');
