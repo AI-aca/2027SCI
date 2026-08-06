@@ -1296,7 +1296,7 @@ function bindPersonalStatementToSelector(qNum) {
          const totalCnt = getCharCount(cleanTextForCount, targetSchool);
          document.getElementById('ps-char-count').textContent = totalCnt;
          
-         const currentQNum = parseInt(document.getElementById('ps-question-selector').value);
+         const currentQNum = document.getElementById('ps-question-selector').value;
          const hData = window.PS_CURRENT_HISTORY;
          if (hData && hData.current) {
            const curr = hData.current.find(c => c.qNum == currentQNum);
@@ -3597,7 +3597,7 @@ window.saveMemo = async function() {
 window.generateChecklist = async function() {
   if (!ACTIVE_PS_STUDENT) return;
   
-  const qNum = parseInt(document.getElementById('ps-question-selector').value);
+  const qNum = document.getElementById('ps-question-selector').value;
   const textVal = window.getCurrentPsText ? window.getCurrentPsText(true) : document.getElementById('ps-content-textarea').value;
   if (!textVal || textVal.trim() === '') {
     alert('자소서 내용이 비어있습니다.');
