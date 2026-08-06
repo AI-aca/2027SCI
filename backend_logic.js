@@ -859,10 +859,26 @@ function calculateRecordScore(data) {
   scores.area1_item2 = Math.max(0, 40 - sciPenalty);
 
   const drops = data.gradeDropsExtracted || { korEng: [], socHisInfo: [], moralTech: [] };
-  const gradeDropsKorEng = dedupe(drops.korEng).length;
-  const gradeDropsSocHisInfo = dedupe(drops.socHisInfo).length;
-  const gradeDropsMoralTech = dedupe(drops.moralTech).length;
-  scores.area1_item3 = Math.max(0, 25 - (gradeDropsKorEng * 10) - (gradeDropsSocHisInfo * 5) - (gradeDropsMoralTech * 3));
+  
+  const calcDrops = (arr) => {
+    let totalDrops = 0;
+    dedupe(arr).forEach(str => {
+      const match = String(str).match(/[BCDE]/);
+      if (match) {
+        if (match[0] === 'B') totalDrops += 1;
+        else if (match[0] === 'C') totalDrops += 2;
+        else if (match[0] === 'D') totalDrops += 3;
+        else if (match[0] === 'E') totalDrops += 4;
+      }
+    });
+    return totalDrops;
+  };
+
+  const dropsKorEng = calcDrops(drops.korEng);
+  const dropsSocHisInfo = calcDrops(drops.socHisInfo);
+  const dropsMoralTech = calcDrops(drops.moralTech);
+  
+  scores.area1_item3 = Math.max(0, 25 - (dropsKorEng * 10) - (dropsSocHisInfo * 5) - (dropsMoralTech * 3));
 
   scores.area1_item4 = Math.min(10, dedupe(data.mathSciClubsExtracted).length * 2);
   scores.area1_item5 = Math.min(10, dedupe(data.totalAwardsExtracted.filter(a => !a.includes('교과'))).length * 2);
