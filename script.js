@@ -3631,9 +3631,10 @@ window.openPsViewerModal = async function(studentLink) {
         const qNum = parseInt(c.qNum);
         const qData = questions[qNum - 1];
         const qPrompt = qData ? qData.content : '문항 정보를 불러올 수 없습니다.';
+        const qTitle = (qData && qData.label) ? `[${qData.label}]` : `[문항 ${c.qNum}]`;
 
         html += `<div style="margin-top: 20px;">`;
-        html += `  <h4 style="color: #a5b4fc; margin-bottom: 8px;">[문항 ${c.qNum}]</h4>`;
+        html += `  <h4 style="color: #a5b4fc; margin-bottom: 8px;">${qTitle}</h4>`;
         html += `  <div style="font-size: 13px; color: #94a3b8; margin-bottom: 12px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; border-left: 3px solid #a5b4fc; line-height: 1.4;">${qPrompt}</div>`;
         html += `  <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 6px; white-space: pre-wrap; font-size: 14px; line-height: 1.6;">${c.text || '<span class="text-muted">내용 없음</span>'}</div>`;
         html += `</div>`;
