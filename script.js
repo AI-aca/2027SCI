@@ -58,7 +58,7 @@ const GlobalLoader = {
         if (this.percent > 99) this.percent = 99;
         textEl.innerText = this.percent + '%';
       }
-    }, 150);
+    }, 3000);
   },
   hide() {
     const overlay = document.getElementById('global-loader-overlay');
