@@ -841,6 +841,9 @@ function calculateRecordScore(data) {
     else if (String(g).includes('C')) mathPenalty += 20;
     else if (String(g).includes('D') || String(g).includes('E')) mathPenalty += 25;
   });
+  if (mathGrades.length < 3) {
+    mathPenalty += (3 - mathGrades.length) * 25;
+  }
   scores.area1_item1 = Math.max(0, 40 - mathPenalty);
 
   const sciGrades = dedupe(data.sciGrades);
@@ -850,6 +853,9 @@ function calculateRecordScore(data) {
     else if (String(g).includes('C')) sciPenalty += 20;
     else if (String(g).includes('D') || String(g).includes('E')) sciPenalty += 25;
   });
+  if (sciGrades.length < 3) {
+    sciPenalty += (3 - sciGrades.length) * 25;
+  }
   scores.area1_item2 = Math.max(0, 40 - sciPenalty);
 
   const drops = data.gradeDropsExtracted || { korEng: [], socHisInfo: [], moralTech: [] };
