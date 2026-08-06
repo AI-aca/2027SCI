@@ -870,6 +870,9 @@ function calculateRecordScore(data) {
         else if (match[0] === 'D') totalDrops += 3;
         else if (match[0] === 'E') totalDrops += 4;
       }
+      if (String(str).includes('누락')) {
+        totalDrops += 2;
+      }
     });
     return totalDrops;
   };
