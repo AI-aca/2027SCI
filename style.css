@@ -1192,7 +1192,7 @@ table.main-data-table tbody tr:hover {
   border: 4px solid rgba(255, 255, 255, 0.2);
   border-top-color: var(--primary-color);
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: spin 0.5s linear infinite;
 }
 @keyframes spin {
   to {
