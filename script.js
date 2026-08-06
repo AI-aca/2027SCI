@@ -629,7 +629,8 @@ function renderMainTable() {
         if (CURRENT_ROLE === '관리자') {
           if (student.recordPdf) {
             const btnText = student.recordScore ? '재채점' : 'AI 채점';
-            td.innerHTML = `<button class="btn-action" style="padding: 2px 6px; font-size: 14px; background-color: var(--color-primary); display: inline-flex;" onclick="runSingleAIEval('${student.studentLink}')"><i class="fa-solid fa-robot"></i> ${btnText}</button>`;
+            td.innerHTML = `<button class="btn-action" style="padding: 2px 6px; font-size: 14px; background-color: var(--color-primary); display: inline-flex;" onclick="runSingleAIEval('${student.studentLink}')"><i class="fa-solid fa-robot"></i> ${btnText}</button>
+                            <button class="btn-action" style="padding: 2px 6px; font-size: 14px; margin-left: 6px; background-color: var(--color-danger); display: inline-flex;" onclick="reparseRecord('${student.studentLink}')"><i class="fa-solid fa-arrows-rotate"></i> 재파싱</button>`;
           } else {
             td.innerHTML = `<span class="text-muted">파일없음</span>`;
           }
@@ -1917,20 +1918,7 @@ function bindEventHandlers() {
       
       const mainHeaderActions = document.getElementById('main-header-actions');
       if (mainHeaderActions) {
-        if (CURRENT_ROLE === '관리자') {
-            if (CURRENT_MENU === 'ps') {
-                mainHeaderActions.innerHTML = `<button class="btn-action" style="background-color: var(--color-primary);" onclick="runBulkAIFeedback()"><i class="fa-solid fa-robot"></i> 일괄 AI 피드백</button>`;
-            } else if (CURRENT_MENU === 'interview') {
-                mainHeaderActions.innerHTML = `<button class="btn-action" style="background-color: var(--color-primary);" onclick="runBulkAIQuestions('record')"><i class="fa-solid fa-comments"></i> 생기부 일괄 AI</button>
-                                              <button class="btn-action" style="background-color: var(--color-primary); margin-left: 5px;" onclick="runBulkAIQuestions('ps')"><i class="fa-solid fa-comments"></i> 자소서 일괄 AI</button>`;
-            } else if (CURRENT_MENU === 'record') {
-                mainHeaderActions.innerHTML = `<button class="btn-action" style="background-color: var(--color-primary);" onclick="runBulkAIEval()"><i class="fa-solid fa-robot"></i> 생기부 점수 일괄 AI</button>`;
-            } else {
-                mainHeaderActions.innerHTML = '';
-            }
-        } else {
-            mainHeaderActions.innerHTML = '';
-        }
+        mainHeaderActions.innerHTML = '';
       }
     });
   });
@@ -2979,107 +2967,8 @@ function hideProgressBar() {
 }
 
 /**
- * 일괄 생기부 점수 AI 채점 실행 (생기부 PDF가 업로드된 학생 대상)
+ * 기존 일괄 AI 관련 함수들 (runBulkAIEval, runBulkAIFeedback, runBulkAIQuestions) 전면 삭제됨
  */
-async function runBulkAIEval() {
-  const targetStudents = STUDENTS_LIST.filter(s => s.recordPdf);
-  if (targetStudents.length === 0) {
-    alert('대상 학생이 없습니다. (생기부 PDF가 업로드된 학생 없음)');
-    return;
-  }
-  
-  if (!confirm(`대상 학생 ${targetStudents.length}명에 대해 일괄 생기부 AI 채점을 실행하시겠습니까?\n한 명당 약 15~30초가 소요됩니다.`)) return;
-  
-  showProgressBar('📊 일괄 생기부 AI 채점 중...', targetStudents.length);
-  
-  for (let i = 0; i < targetStudents.length; i++) {
-    const student = targetStudents[i];
-    updateProgressBar(i, targetStudents.length, `${student.name} 학생 생기부 분석 및 채점 중...`);
-    try {
-      const res = await ApiClient.post('evaluateStudentRecord', { studentId: student.studentLink, recordText: null });
-      if (!res.success) throw new Error(res.error);
-      await new Promise(r => setTimeout(r, 4000));
-    } catch (e) {
-      console.error(`${student.name} 학생 생기부 AI 채점 실패:`, e);
-      alert(`🚨 [에러 원문 팩트 확인용]\n${student.name} 학생 채점 중 에러 발생:\n${e.message}`);
-      hideProgressBar();
-      throw e;
-    }
-  }
-  
-  updateProgressBar(targetStudents.length, targetStudents.length, '일괄 처리 완료!');
-  alert('일괄 생기부 AI 채점 완료!');
-  hideProgressBar();
-  loadStudentsData();
-}
-
-/**
- * 일괄 AI 피드백 실행 (작성중 또는 최종제출인 모든 학생 대상)
- */
-async function runBulkAIFeedback() {
-  const targetStudents = STUDENTS_LIST.filter(s => s.psStatus === '작성중' || s.psStatus === '최종제출');
-  if (targetStudents.length === 0) {
-    alert('대상 학생이 없습니다. (자소서를 1글자라도 작성한 학생 없음)');
-    return;
-  }
-  
-  if (!confirm(`대상 학생 ${targetStudents.length}명에 대해 일괄 AI 피드백을 실행하시겠습니까?\n한 명당 약 5~10초 소요됩니다.`)) return;
-  
-  showProgressBar('🤖 일괄 AI 피드백 실행 중...', targetStudents.length);
-  
-  for (let i = 0; i < targetStudents.length; i++) {
-    const student = targetStudents[i];
-    updateProgressBar(i, targetStudents.length, `${student.name} 학생 분석 중...`);
-    try {
-      const res = await ApiClient.post('generateAIFeedback', { studentId: student.studentLink });
-      if (!res.success) throw new Error(res.error);
-      await new Promise(r => setTimeout(r, 3500));
-    } catch (e) {
-      console.error(`${student.name} 학생 AI 피드백 실패:`, e);
-    }
-  }
-  
-  updateProgressBar(targetStudents.length, targetStudents.length, '일괄 처리 완료!');
-  alert('일괄 AI 피드백 완료!');
-  hideProgressBar();
-  loadStudentsData();
-}
-
-/**
- * 일괄 AI 예상질문 생성 (최종제출 및 미생성인 학생 대상)
- */
-async function runBulkAIQuestions(mode) {
-  const isPsMode = mode === 'ps';
-  const targetStudents = STUDENTS_LIST.filter(s => {
-      if (isPsMode) return s.psStatus === '최종제출';
-      else return s.recordPdf;
-  });
-  if (targetStudents.length === 0) {
-    alert('대상 학생이 없습니다.');
-    return;
-  }
-  
-  if (!confirm(`대상 학생 ${targetStudents.length}명에 대해 일괄 AI 예상질문 생성을 실행하시겠습니까?\n한 명당 약 5~10초 소요됩니다.`)) return;
-  
-  showProgressBar('📝 일괄 AI 예상질문 생성 중...', targetStudents.length);
-  
-  for (let i = 0; i < targetStudents.length; i++) {
-    const student = targetStudents[i];
-    updateProgressBar(i, targetStudents.length, `${student.name} 학생 질문 생성 중...`);
-    try {
-      const res = await ApiClient.post('generateAIQuestions', { studentId: student.studentLink, type: isPsMode ? '자소서' : '생기부' });
-      if (!res.success) throw new Error(res.error);
-      await new Promise(r => setTimeout(r, 3500));
-    } catch (e) {
-      console.error(`${student.name} 학생 AI 예상질문 생성 실패:`, e);
-    }
-  }
-  
-  updateProgressBar(targetStudents.length, targetStudents.length, '일괄 처리 완료!');
-  alert('일괄 AI 예상질문 생성 완료!');
-  hideProgressBar();
-  loadStudentsData();
-}
 
 /**
  * 역할 및 권한별 사용안내 패널 렌더러
@@ -3153,7 +3042,7 @@ function renderUserGuideContent() {
             <ul style="list-style: none; padding: 0; margin: 0; margin-left: 5px;">
               <li style="margin-bottom: 8px; font-size: 14px;">① <strong>[자기소개서]</strong> 탭에서 첨삭할 학생 우측의 <code>[<i class="fa-solid fa-pen"></i> 자소서 첨삭]</code>(녹색 버튼)을 클릭합니다.</li>
               <li style="margin-bottom: 8px; font-size: 14px;">② 우측 화면 상단의 <strong>'문항별 피드백'</strong> 탭이 선택되어 있는지 확인합니다.</li>
-              <li style="font-size: 14px;">③ 지도 의견을 작성하고 화면 하단의 <code>[피드백 저장]</code> 버튼을 누르면 학생에게 즉시 연동됩니다.</li>
+              <li style="font-size: 14px;">③ 지도 의견을 작성하고 화면 하단의 <code>[피드백 저장]</code> 버튼을 누르면 학생에게 즉시 연동됩니다. 또한 AI도움받기를 통해 <strong>&lt;각 문항별 피드백 도움&gt;</strong>을 받을 수 있습니다!</li>
             </ul>
           </div>
 
@@ -3536,6 +3425,19 @@ async function runSingleAIQuestions(studentId, mode) {
   } catch(e) {
     alert('실행 중 오류 발생: ' + e.toString());
     
+  }
+}
+
+async function reparseRecord(studentId) {
+  if (!confirm('정말 해당 학생의 생기부를 재파싱 하시겠습니까? (기존 파싱 데이터 삭제 후 즉시 재채점 됩니다)')) return;
+  try {
+    if (window.supabaseClient) {
+      const { error } = await window.supabaseClient.from('parsed_records').delete().eq('student_link', studentId);
+      if (error) throw error;
+    }
+    await runSingleAIEval(studentId);
+  } catch(e) {
+    alert('재파싱 오류: ' + e.message);
   }
 }
 
