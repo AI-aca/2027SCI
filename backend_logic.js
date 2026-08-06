@@ -444,25 +444,8 @@ async function evaluateStudentRecord(studentId, recordText) {
       const { data: cached } = await window.supabaseClient.from('parsed_records').select('parsed_content').eq('student_link', effectiveLink).maybeSingle();
       if (cached && cached.parsed_content && cached.parsed_content.length >= 100) {
         textToAnalyze = cached.parsed_content;
-      } else if (student.record_link && (student.record_link.startsWith('http://') || student.record_link.startsWith('https://'))) {
-        // 2차: 생기부 PDF에서 OCR 텍스트 실시간 추출
-        textToAnalyze = await extractTextFromPdf(student.record_link);
-        if (textToAnalyze && textToAnalyze.length >= 100) {
-          // 다음 채점을 위해 parsed_records 캐시 보관 (SELECT -> UPDATE/INSERT)
-          const { data: existingParsed } = await window.supabaseClient.from('parsed_records').select('id').eq('student_link', effectiveLink).maybeSingle();
-          let prErr;
-          if (existingParsed && existingParsed.id) {
-            const res = await window.supabaseClient.from('parsed_records').update({ parsed_content: textToAnalyze }).eq('id', existingParsed.id);
-            prErr = res.error;
-          } else {
-            const res = await window.supabaseClient.from('parsed_records').insert({ student_link: effectiveLink, student_name: student.student_name || student.name || '', parsed_content: textToAnalyze });
-            prErr = res.error;
-          }
-          if (prErr) {
-            console.error('parsed_records 저장 에러:', prErr);
-            throw new Error('파싱 텍스트 캐시 저장에 실패했습니다: ' + prErr.message);
-          }
-        }
+      } else {
+        return { success: false, error: 'NOT_PARSED' };
       }
     }
     
@@ -685,6 +668,45 @@ async function evaluateStudentRecord(studentId, recordText) {
     return { success: true, score: totalScore, analysisReport: analysisText, scoreDetails: finalParsedData };
   } catch (err) {
     throw err;
+  }
+}
+
+/**
+ * 순수 파싱 로직 (PDF -> OCR 텍스트 추출 후 캐시 저장)
+ */
+async function parseStudentRecord(payload) {
+  try {
+    const studentId = payload.studentId || payload;
+    let { data: student } = await window.supabaseClient.from('students').select('*').or(`student_link.eq.${studentId},id.eq.${studentId}`).maybeSingle();
+    if (!student) throw new Error('학생 정보를 수파베이스에서 찾을 수 없습니다.');
+    
+    const effectiveLink = student.student_link || student.id;
+    if (!student.record_link || (!student.record_link.startsWith('http://') && !student.record_link.startsWith('https://'))) {
+      throw new Error('유효한 생기부 PDF 링크가 없습니다. 구글 드라이브에 파일을 업로드해주세요.');
+    }
+
+    const textToAnalyze = await extractTextFromPdf(student.record_link);
+    if (!textToAnalyze || textToAnalyze.length < 100) {
+      throw new Error('파싱된 텍스트가 너무 짧거나 추출에 실패했습니다.');
+    }
+
+    const { data: existingParsed } = await window.supabaseClient.from('parsed_records').select('id').eq('student_link', effectiveLink).maybeSingle();
+    let prErr;
+    if (existingParsed && existingParsed.id) {
+      const res = await window.supabaseClient.from('parsed_records').update({ parsed_content: textToAnalyze }).eq('id', existingParsed.id);
+      prErr = res.error;
+    } else {
+      const res = await window.supabaseClient.from('parsed_records').insert({ student_link: effectiveLink, student_name: student.student_name || student.name || '', parsed_content: textToAnalyze });
+      prErr = res.error;
+    }
+    
+    if (prErr) {
+      throw new Error('파싱 텍스트 캐시 저장에 실패했습니다: ' + prErr.message);
+    }
+    
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.toString() };
   }
 }
 
@@ -1797,6 +1819,7 @@ window.saveSettings = saveSettings;
 window.generateAIFeedback = generateAIFeedback;
 window.generateAIQuestions = generateAIQuestions;
 window.evaluateStudentRecord = evaluateStudentRecord;
+window.parseStudentRecord = parseStudentRecord;
 window.uploadStudentRecordPdf = uploadStudentRecordPdf;
 window.extractTextFromPdf = extractTextFromPdf;
 

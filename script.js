@@ -3429,15 +3429,18 @@ async function runSingleAIQuestions(studentId, mode) {
 }
 
 async function reparseRecord(studentId) {
-  if (!confirm('정말 해당 학생의 생기부를 재파싱 하시겠습니까? (기존 파싱 데이터 삭제 후 즉시 재채점 됩니다)')) return;
+  if (!confirm('정말 해당 학생의 생기부를 재파싱 하시겠습니까? (기존 파싱 데이터가 삭제되고 새롭게 문자를 추출합니다. 채점은 진행되지 않습니다.)')) return;
+  showProgressBar('생기부 텍스트 파싱 중...', 1);
+  updateProgressBar(0, 1, 'PDF에서 텍스트를 추출하는 중...');
   try {
-    if (window.supabaseClient) {
-      const { error } = await window.supabaseClient.from('parsed_records').delete().eq('student_link', studentId);
-      if (error) throw error;
-    }
-    await runSingleAIEval(studentId);
+    const res = await ApiClient.post('parseStudentRecord', { studentId });
+    if (!res.success) throw new Error(res.error);
+    updateProgressBar(1, 1, '파싱 완료!');
+    alert('생기부 파싱이 성공적으로 완료되었습니다! 이제 [재채점] 버튼을 눌러 채점을 진행해주세요.');
   } catch(e) {
     alert('재파싱 오류: ' + e.message);
+  } finally {
+    hideProgressBar();
   }
 }
 
@@ -3447,7 +3450,13 @@ async function runSingleAIEval(studentId) {
   updateProgressBar(0, 1, '생기부 분석 및 채점 진행 중...');
   try {
     const res = await ApiClient.post('evaluateStudentRecord', { studentId, recordText: null });
-    if (!res.success) throw new Error(res.error);
+    if (!res.success) {
+      if (res.error === 'NOT_PARSED') {
+        alert('생기부 파싱 데이터가 없습니다. 먼저 [재파싱] 버튼을 눌러 파싱을 진행해주세요.');
+        return;
+      }
+      throw new Error(res.error);
+    }
     updateProgressBar(1, 1, '채점 완료!');
     alert('생기부 AI 수동 채점 완료!');
     loadStudentsData();
