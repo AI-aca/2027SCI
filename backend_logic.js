@@ -1388,9 +1388,9 @@ async function savePersonalStatement(payload) {
     const { studentId, contents, writer } = payload;
     const now = new Date().toISOString();
     
-    const { data: student } = await window.supabaseClient.from('students').select('cover_letter_status').eq('student_link', studentId).single();
+    const { data: student } = await window.supabaseClient.from('students').select('cover_letter_status').or(`student_link.eq.${studentId},id.eq.${studentId}`).single();
     if (student && student.cover_letter_status === '작성전') {
-      await window.supabaseClient.from('students').update({ cover_letter_status: '작성중' }).eq('student_link', studentId);
+      await window.supabaseClient.from('students').update({ cover_letter_status: '작성중' }).or(`student_link.eq.${studentId},id.eq.${studentId}`);
     }
 
     // 변경된 항목을 자소서와 피드백으로 분리
@@ -1586,7 +1586,7 @@ async function updateStudent(payload) {
       science_teacher: studentData.sciTeacher || '',
       student_link: studentData.studentLink || ''
     };
-    const { error } = await window.supabaseClient.from('students').update(updateObj).eq('student_link', originalLink);
+    const { error } = await window.supabaseClient.from('students').update(updateObj).or(`student_link.eq.${originalLink},id.eq.${originalLink}`);
     if (error) throw error;
     return { success: true };
   } catch (err) {
@@ -1597,7 +1597,7 @@ async function updateStudent(payload) {
 async function archiveStudent(payload) {
   try {
     const studentId = payload.studentId || payload;
-    const { error } = await window.supabaseClient.from('students').delete().eq('student_link', studentId);
+    const { error } = await window.supabaseClient.from('students').delete().or(`student_link.eq.${studentId},id.eq.${studentId}`);
     if (error) throw error;
     return { success: true };
   } catch (err) {
@@ -1617,7 +1617,7 @@ async function hardDeleteStudent(payload) {
     }
     
     // 2. DB에서 학생 레코드 삭제 (ON DELETE CASCADE로 연결된 데이터 함께 삭제됨)
-    const { error } = await window.supabaseClient.from('students').delete().eq('student_link', studentLink);
+    const { error } = await window.supabaseClient.from('students').delete().or(`student_link.eq.${studentLink},id.eq.${studentLink}`);
     if (error) throw error;
     return { success: true };
   } catch (err) {
