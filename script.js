@@ -1375,6 +1375,21 @@ function bindPersonalStatementToSelector(qNum) {
     }
   }
   
+  // AI 도움받기 바인딩 (해당 문항의 최신 내역 로드)
+  const aiContainer = document.getElementById('ai-feedback-container');
+  if (aiContainer) {
+    const aiLog = hData.aiHistory || [];
+    const currentType = '문항' + qNum + '_도움받기';
+    const targetAILogs = aiLog.filter(log => log.type === currentType);
+    if (targetAILogs.length > 0) {
+      aiContainer.innerHTML = parseMarkdown(targetAILogs[targetAILogs.length - 1].feedback);
+    } else {
+      aiContainer.innerHTML = `<div style="text-align:center; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-muted); word-break: keep-all; padding: 10px;">
+                                 아직 생성된 AI 피드백이 없습니다.
+                               </div>`;
+    }
+  }
+  
   // 버전선택 드롭다운 초기화
   const verSelector = document.getElementById('ps-version-selector');
   verSelector.innerHTML = '<option value="current" style="background-color: #1e293b; color: #f8fafc;">⭐ 최신 작성 내용</option>';
@@ -2855,6 +2870,9 @@ function renderScoreBasisCards(cards, role) {
                      let displayQ = q;
                      if (role !== '관리자') {
                        displayQ = displayQ.replace(/소계\s*\d+(\.\d+)?점/g, '').trim();
+                     }
+                     if (role === '교사') {
+                       displayQ = displayQ.replace(/\(-25점\)/g, '').trim();
                      }
                      if (q.includes('학기]') || q.includes('학년]')) {
                        let html = '<li style="margin-top: 12px; color: var(--color-warning, #ffeb3b); font-weight: bold; list-style: none; margin-left: -20px;">▶ ' + displayQ + '</li>';
