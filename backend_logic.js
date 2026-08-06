@@ -1102,8 +1102,24 @@ function generateScoreCardsData(d, scores, role = '관리자') {
   };
 
   const specs = [
-    { key: 'area1_item1', range: '🔍 탐색 범위: 교과학습발달상황(성취도) 표 전체 (1, 2, 3학년 총 3개 학년)', title: '1. 최근 3학기 수학 성취도', max: 40, desc: 'B등급 -15점, C등급 -20점, D/E등급 -25점', getQuote: (d) => getArrText(d.mathGrades) },
-    { key: 'area1_item2', range: '🔍 탐색 범위: 교과학습발달상황(성취도) 표 전체 (1, 2, 3학년 총 3개 학년)', title: '2. 최근 3학기 과학 성취도', max: 40, desc: 'B등급 -15점, C등급 -20점, D/E등급 -25점', getQuote: (d) => getArrText(d.sciGrades) },
+    { key: 'area1_item1', range: '🔍 탐색 범위: 교과학습발달상황(성취도) 표 전체 (1, 2, 3학년 총 3개 학년)', title: '1. 최근 3학기 수학 성취도', max: 40, desc: 'B등급 -15점, C등급 -20점, D/E등급 -25점', getQuote: (d) => {
+        let arr = getArrText(d.mathGrades);
+        const expected = ['2-1', '2-2', '3-1'];
+        let textJoined = arr.join(' ');
+        expected.forEach(term => {
+          if (!textJoined.includes(term)) arr.push(`${term}학기 성적 누락 (-25점)`);
+        });
+        return arr;
+    } },
+    { key: 'area1_item2', range: '🔍 탐색 범위: 교과학습발달상황(성취도) 표 전체 (1, 2, 3학년 총 3개 학년)', title: '2. 최근 3학기 과학 성취도', max: 40, desc: 'B등급 -15점, C등급 -20점, D/E등급 -25점', getQuote: (d) => {
+        let arr = getArrText(d.sciGrades);
+        const expected = ['2-1', '2-2', '3-1'];
+        let textJoined = arr.join(' ');
+        expected.forEach(term => {
+          if (!textJoined.includes(term)) arr.push(`${term}학기 성적 누락 (-25점)`);
+        });
+        return arr;
+    } },
     { key: 'area1_item3', range: '🔍 탐색 범위: 교과학습발달상황(성취도) 표 전체 (1, 2, 3학년 총 3개 학년)', title: '3. 주요과목 등급 유지도', max: 25, desc: '국/영 -10점, 사/역/정 -5점, 도덕/기가 -3점 (1회당)', getQuote: (d) => getDropText(d.gradeDropsExtracted) },
     { key: 'area1_item4', range: '🔍 탐색 범위: 창의적 체험활동 중 동아리활동 (1, 2, 3학년 총 3개 학년)', title: '4. 수/과학 관련 동아리', max: 10, desc: '동아리 개수당 2점 가산', getQuote: (d) => getArrText(d.mathSciClubsExtracted) },
     { key: 'area1_item5', range: '🔍 탐색 범위: 수상경력 표 전체 (1, 2, 3학년 총 3개 학년)', title: '5. 학기당 수상 실적', max: 10, desc: '실적당 2점 가산 (교과상 제외)', getQuote: (d) => getArrText(d.totalAwardsExtracted) },
