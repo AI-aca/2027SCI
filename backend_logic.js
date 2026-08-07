@@ -1417,9 +1417,16 @@ async function getPersonalStatementHistory(payload) {
     // 별도의 teacher_feedbacks 테이블에서 피드백 최신본 덮어쓰기
     const { data: teacherFeedbacks } = await window.supabaseClient.from('teacher_feedbacks').select('*').eq('student_link', studentId);
     (teacherFeedbacks || []).forEach(f => {
-      const qNumStr = String(f.question_no);
-      if (currentStateMap[qNumStr]) {
-        currentStateMap[qNumStr].feedback = f.feedback || '';
+      let qNumStr = String(f.question_no);
+      let targetKey = qNumStr;
+      if (!currentStateMap[targetKey] && currentStateMap['문항' + targetKey]) {
+        targetKey = '문항' + targetKey;
+      } else if (!currentStateMap[targetKey] && currentStateMap[targetKey.replace('문항', '')]) {
+        targetKey = targetKey.replace('문항', '');
+      }
+
+      if (currentStateMap[targetKey]) {
+        currentStateMap[targetKey].feedback = f.feedback || '';
       }
     });
 
@@ -1504,6 +1511,22 @@ async function savePersonalStatement(payload) {
       if (updErr) throw updErr;
     }
     
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.toString() };
+  }
+}
+
+window.deletePersonalStatementSnapshot = async function(studentId, qNum, timestamp) {
+  try {
+    const { error } = await window.supabaseClient
+      .from('personal_statements')
+      .delete()
+      .eq('student_link', studentId)
+      .eq('question_no', qNum)
+      .eq('updated_at', timestamp);
+    
+    if (error) throw error;
     return { success: true };
   } catch (err) {
     return { success: false, error: err.toString() };
