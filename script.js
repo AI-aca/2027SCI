@@ -1406,16 +1406,6 @@ function bindPersonalStatementToSelector(qNum) {
     historySelector.innerHTML = '<option value="" style="background-color: #1e293b; color: #f8fafc;">과거 버전 선택</option>';
     const historyList = window.PS_CURRENT_HISTORY.history || [];
     
-    // 현재 문항의 가장 마지막(최신) 스냅샷 인덱스 찾기
-    let latestIndex = -1;
-    for (let i = historyList.length - 1; i >= 0; i--) {
-      const t = historyList[i].texts.find(x => x.qNum == qNum);
-      if (t && t.text) {
-        latestIndex = i;
-        break;
-      }
-    }
-
     let lastText = '';
     historyList.forEach((h, index) => {
       const textObj = h.texts.find(t => t.qNum == qNum);
@@ -1427,27 +1417,24 @@ function bindPersonalStatementToSelector(qNum) {
         opt.textContent = formatTimestamp(h.timestamp);
         opt.style.backgroundColor = '#1e293b';
         opt.style.color = '#f8fafc';
-        
-        if (index === latestIndex) {
-          opt.dataset.is_protected = "true";
-          opt.textContent += " (최신)";
-        }
-        
         historySelector.appendChild(opt);
         lastText = textObj.text;
       }
     });
 
-    // 드롭다운 항목 중 직전 버전(두 번째 최신) 찾아서 보호 처리
+    // 드롭다운 항목 중 가장 최신 버전과 직전 버전을 찾아서 보호 처리
+    // historyList는 최신순(내림차순)으로 정렬되어 있으므로, 
+    // opts[0]은 "과거 버전 선택"
+    // opts[1]은 가장 최신 버전
+    // opts[2]는 직전(두 번째 최신) 버전
     const opts = historySelector.options;
-    if (opts.length > 2) {
-      const secondLatestOpt = opts[opts.length - 2];
-      secondLatestOpt.dataset.is_protected = "true";
-      secondLatestOpt.textContent += " [보호됨]";
-    } else if (opts.length === 2 && !opts[1].textContent.includes('(최신)')) {
-      // 예외: 최신버전 하나만 있는데 latestIndex 조건에 안 걸렸을 경우를 대비
+    if (opts.length > 1) {
       opts[1].dataset.is_protected = "true";
-      opts[1].textContent += " [최소보호]";
+      opts[1].textContent += " (최신)";
+    }
+    if (opts.length > 2) {
+      opts[2].dataset.is_protected = "true";
+      opts[2].textContent += " [보호됨]";
     }
   }
 }
