@@ -44,7 +44,7 @@ window.updateCenterDropdowns = function() {
 const GlobalLoader = {
   interval: null,
   percent: 0,
-  show() {
+  show(speedMs = 300) {
     const overlay = document.getElementById('global-loader-overlay');
     const textEl = document.getElementById('loader-percentage-text');
     if (!overlay || !textEl) return;
@@ -58,7 +58,7 @@ const GlobalLoader = {
         if (this.percent > 99) this.percent = 99;
         textEl.innerText = this.percent + '%';
       }
-    }, 3000);
+    }, speedMs);
   },
   hide() {
     const overlay = document.getElementById('global-loader-overlay');
@@ -89,7 +89,17 @@ window.updatePassStatusFrontend = async function(studentLink, passType, passValu
 const ApiClient = {
   async post(action, payload = {}, options = {}) {
     const useLoader = !options.hideLoader;
-    if (useLoader) GlobalLoader.show();
+    if (useLoader) {
+      let speedMs = 300;
+      if (action === 'generateAIFeedback') {
+        speedMs = 900;
+      } else if (action === 'generateAIQuestions') {
+        speedMs = 3000;
+      } else if (action === 'evaluateStudentRecord' || action === 'extractTextFromPdf' || action === 'uploadStudentRecordPdf') {
+        speedMs = 4500;
+      }
+      GlobalLoader.show(speedMs);
+    }
     try {
       if (typeof window[action] !== 'function') {
         throw new Error(`백엔드 로직 ${action} 가 로드되지 않았습니다. backend_logic.js가 연결되었는지 확인하세요.`);
@@ -131,8 +141,8 @@ const ApiClient = {
   }
 };
 
-function showGlobalLoader(text) {
-  GlobalLoader.show();
+function showGlobalLoader(text, speedMs = 300) {
+  GlobalLoader.show(speedMs);
   const t = document.getElementById('loader-percentage-text');
   if (t) t.innerText = text || '서버와 통신 중입니다...';
 }
@@ -3629,7 +3639,7 @@ window.saveMemo = async function() {
     return;
   }
   const memo = document.getElementById('student-memo-pad').value;
-  showGlobalLoader(50, '메모 저장 중...');
+  showGlobalLoader('메모 저장 중...', 300);
   const res = await window.saveStudentMemo(ACTIVE_PS_STUDENT, memo);
   hideGlobalLoader();
   if (res && res.success) {
@@ -3653,7 +3663,7 @@ window.generateChecklist = async function() {
   
   if (!confirm(`현재 문항(${qNum}번)에 대한 AI 체크리스트를 생성하시겠습니까?`)) return;
   
-  showGlobalLoader(50, 'AI 체크리스트 분석 중...');
+  showGlobalLoader('AI 체크리스트 분석 중...', 900);
   try {
     const res = await window.generateAIChecklist(ACTIVE_PS_STUDENT, qNum, textVal);
     hideGlobalLoader();
