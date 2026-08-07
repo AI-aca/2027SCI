@@ -2052,7 +2052,11 @@ function bindEventHandlers() {
         const res = await window.deletePersonalStatementSnapshot(studentId, qNum, timestamp);
         if (res.success) {
           alert('삭제되었습니다.');
-          getPersonalStatementHistory(studentId); // UI 갱신
+          selectedOption.remove();
+          historySelector.value = '';
+          if (typeof loadPersonalStatementData === 'function') {
+            loadPersonalStatementData(studentId); // 전체 상태 갱신
+          }
         } else {
           alert('삭제 중 오류가 발생했습니다: ' + res.error);
         }
