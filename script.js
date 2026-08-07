@@ -191,7 +191,7 @@ function parseMarkdown(text) {
   let html = text.replace(/^\s+/, '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); // XSS 방지
   html = html.replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--color-primary-light); font-weight:700;">$1</strong>'); // Bold
   html = html.replace(/^#### (.*)$/gim, '<h4 style="margin-top:20px; margin-bottom:8px; color:var(--color-primary); font-size:15px;">$1</h4>'); // H4
-  html = html.replace(/^### (.*)$/gim, '<h3 style="margin-top:24px; margin-bottom:12px; color:var(--color-primary); font-size:17px; padding-top:12px;">$1</h3>'); // H3 (항목 선 완전히 제거)
+  html = html.replace(/^### (.*)$/gim, '<h3 style="margin-top:0; margin-bottom:12px; color:var(--color-primary); font-size:17px; padding-top:0;">$1</h3>'); // H3 (항목 선 완전히 제거)
   html = html.replace(/^## (.*)$/gim, '<h3 style="margin-top:24px; margin-bottom:12px; color:var(--color-primary); font-size:17px; padding-top:12px;">$1</h3>'); // H2 (예외처리)
   html = html.replace(/^# (.*)$/gim, '<h3 style="margin-top:24px; margin-bottom:12px; color:var(--color-primary); font-size:17px; padding-top:12px;">$1</h3>'); // H1 (예외처리)
   html = html.replace(/^[#\s]*===\s*(문항\s*\d+).*?===$/gim, '<h3 style="margin-top:36px; margin-bottom:12px; color:var(--color-primary); font-size:17px; border-top:1px solid rgba(255,255,255,0.2); padding-top:16px;">[$1]</h3>'); // === 문항 N === (AI 변칙 문자 포용)
