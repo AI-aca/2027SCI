@@ -284,6 +284,8 @@ function applyRoleUI(role) {
     });
     const btnUploadPdf = document.getElementById('btn-upload-pdf');
     if (btnUploadPdf) btnUploadPdf.style.display = 'none'; // 학생은 숨김
+    const btnDelPsHistory = document.getElementById('btn-delete-ps-history');
+    if (btnDelPsHistory) btnDelPsHistory.style.display = 'none';
     
     if (aiFeedbackTab) aiFeedbackTab.style.display = 'none';
     document.getElementById('current-role-display').textContent = '학생 전용 작성';
@@ -301,6 +303,8 @@ function applyRoleUI(role) {
     if (settingsMenu) settingsMenu.parentNode.style.display = 'none';
     const btnUploadPdf = document.getElementById('btn-upload-pdf');
     if (btnUploadPdf) btnUploadPdf.style.display = 'none'; // 교사는 숨김 (조회만 가능)
+    const btnDelPsHistory = document.getElementById('btn-delete-ps-history');
+    if (btnDelPsHistory) btnDelPsHistory.style.display = 'none';
     if (aiFeedbackTab) aiFeedbackTab.style.display = 'block';
     document.getElementById('current-role-display').textContent = '일반 교사 계정';
     document.getElementById('current-user-status').textContent = '조회 및 첨삭 권한 보유';
@@ -319,6 +323,8 @@ function applyRoleUI(role) {
     if (settingsMenu) settingsMenu.parentNode.style.display = 'block';
     const btnUploadPdf = document.getElementById('btn-upload-pdf');
     if (btnUploadPdf) btnUploadPdf.style.display = 'block'; // 관리자 보임
+    const btnDelPsHistory = document.getElementById('btn-delete-ps-history');
+    if (btnDelPsHistory) btnDelPsHistory.style.display = 'inline-block';
     if (aiFeedbackTab) aiFeedbackTab.style.display = 'block';
     document.getElementById('current-role-display').textContent = '시스템 관리자';
     document.getElementById('current-user-status').textContent = 'AI 및 모든 환경 제어권 보유';
@@ -965,25 +971,11 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual') {
   if (psSelector) {
     psSelector.innerHTML = '';
     questions.forEach((q, idx) => {
-      let shortLabel = q.label;
-      let fullQuestionText = q.label; 
-      
-      if (q.label.includes('.')) {
-        const parts = q.label.split('.');
-        shortLabel = parts[0].trim(); // "문항 1" 등 온점 앞부분만 추출
-        fullQuestionText = q.label.substring(q.label.indexOf('.') + 1).trim(); // 온점 뒷부분 (실제 질문)
-      } else if (q.label.length > 8) {
-        // 온점이 없고 텍스트가 8자를 초과하면 임의로 라벨링 부여
-        shortLabel = `문항 ${idx + 1}`;
-        fullQuestionText = q.label;
-      } else {
-        // 일반적인 짧은 라벨
-        shortLabel = q.label;
-        fullQuestionText = "";
-      }
+      let shortLabel = q.label.trim();
+      let fullQuestionText = "";
       
       const opt = document.createElement('option');
-      opt.value = shortLabel.replace('문항 ', '').trim();
+      opt.value = shortLabel;
       // OS 다크모드 렌더링 충돌 방지를 위해 JS 인라인 스타일을 다시 강제 주입 (캐시 무시)
       opt.style.backgroundColor = '#1e293b';
       opt.style.color = '#f8fafc';
@@ -1015,13 +1007,7 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual') {
     if (!historyData.current) historyData.current = [];
     const maxQNum = questions.length;
     questions.forEach((q, idx) => {
-      let shortLabel = q.label;
-      if (q.label.includes('.')) {
-        shortLabel = q.label.split('.')[0].trim();
-      } else if (q.label.length > 8) {
-        shortLabel = `문항 ${idx + 1}`;
-      }
-      const qVal = shortLabel.replace('문항 ', '').trim();
+      const qVal = q.label.trim();
       if (!historyData.current.find(c => String(c.qNum) === String(qVal))) {
         historyData.current.push({ qNum: qVal, text: '', feedback: '' });
       }
@@ -1220,7 +1206,7 @@ function bindPersonalStatementToSelector(qNum) {
   if (!hData) return;
   
   // 최신 자소서 로드
-  const curr = hData.current.find(c => c.qNum == qNum);
+  const curr = hData.current.find(c => String(c.qNum) == String(qNum));
   const textVal = curr ? curr.text : '';
   const feedbackVal = curr ? curr.feedback : '';
   
@@ -1260,10 +1246,7 @@ function bindPersonalStatementToSelector(qNum) {
   const schoolMap = window.SCHOOL_QUESTIONS_MAP || [];
   const matchedSchool = schoolMap.find(s => s.name === targetSchool);
   const qData = matchedSchool && matchedSchool.questions ? matchedSchool.questions.find(q => {
-    let sl = q.label;
-    if (q.label.includes('.')) sl = q.label.split('.')[0].trim();
-    else if (q.label.length > 8) sl = '문항 x'; // dummy for now, fallback logic
-    return sl.replace('문항 ', '').trim() === String(qNum) || q.label === String(qNum);
+    return q.label.trim() === String(qNum).trim();
   }) : null;
   const details = qData && qData.details ? qData.details : [];
 
@@ -1326,7 +1309,7 @@ function bindPersonalStatementToSelector(qNum) {
          const currentQNum = document.getElementById('ps-question-selector').value;
          const hData = window.PS_CURRENT_HISTORY;
          if (hData && hData.current) {
-           const curr = hData.current.find(c => c.qNum == currentQNum);
+           const curr = hData.current.find(c => String(c.qNum) == String(currentQNum));
            if (curr) {
              curr.text = combined;
              isPsDirty = true;
@@ -1417,7 +1400,25 @@ function bindPersonalStatementToSelector(qNum) {
     }
   }
   
-
+  // 타임머신 드롭다운 내용 갱신
+  const historySelector = document.getElementById('ps-history-selector');
+  if (historySelector && window.PS_CURRENT_HISTORY) {
+    historySelector.innerHTML = '<option value="">과거 버전 선택</option>';
+    const historyList = window.PS_CURRENT_HISTORY.history || [];
+    
+    let lastText = '';
+    historyList.forEach((h, index) => {
+      const textObj = h.texts.find(t => t.qNum == qNum);
+      if (textObj && textObj.text && textObj.text !== lastText) {
+        const opt = document.createElement('option');
+        opt.value = textObj.text;
+        opt.dataset.timestamp = h.timestamp; // 삭제용 timestamp
+        opt.textContent = formatTimestamp(h.timestamp);
+        historySelector.appendChild(opt);
+        lastText = textObj.text;
+      }
+    });
+  }
 }
 
 
@@ -2027,27 +2028,35 @@ function bindEventHandlers() {
   // 자소서 문항 드롭다운 연동
   document.getElementById('ps-question-selector').onchange = (e) => {
     bindPersonalStatementToSelector(e.target.value);
-    
-    // 타임머신 드롭다운 내용 갱신
-    const historySelector = document.getElementById('ps-history-selector');
-    if (historySelector && window.PS_CURRENT_HISTORY) {
-      historySelector.innerHTML = '<option value="">과거 버전 선택</option>';
-      const qNum = e.target.value;
-      const historyList = window.PS_CURRENT_HISTORY.history || [];
-      
-      let lastText = '';
-      historyList.forEach((h, index) => {
-        const textObj = h.texts.find(t => t.qNum == qNum);
-        if (textObj && textObj.text && textObj.text !== lastText) {
-          const opt = document.createElement('option');
-          opt.value = textObj.text;
-          opt.textContent = formatTimestamp(h.timestamp);
-          historySelector.appendChild(opt);
-          lastText = textObj.text;
-        }
-      });
-    }
   };
+
+  const btnDelPsHistory = document.getElementById('btn-delete-ps-history');
+  if (btnDelPsHistory) {
+    btnDelPsHistory.onclick = async () => {
+      const historySelector = document.getElementById('ps-history-selector');
+      const selectedOption = historySelector.options[historySelector.selectedIndex];
+      if (!selectedOption || !selectedOption.value) {
+        alert('삭제할 과거 버전을 선택해주세요.');
+        return;
+      }
+      
+      const timestamp = selectedOption.dataset.timestamp;
+      const qNum = document.getElementById('ps-question-selector').value;
+      const studentId = window.PS_TARGET_STUDENT;
+      
+      if (!timestamp || !qNum || !studentId) return;
+
+      if (confirm('정말 삭제하시겠습니까?')) {
+        const res = await window.deletePersonalStatementSnapshot(studentId, qNum, timestamp);
+        if (res.success) {
+          alert('삭제되었습니다.');
+          getPersonalStatementHistory(studentId); // UI 갱신
+        } else {
+          alert('삭제 중 오류가 발생했습니다: ' + res.error);
+        }
+      }
+    };
+  }
 
   // 타임머신 드롭다운 변경 연동
   const historySelector = document.getElementById('ps-history-selector');
@@ -2059,17 +2068,21 @@ function bindEventHandlers() {
           const targetSchool = document.getElementById('ps-school-name').textContent.replace('지원 학교: ', '');
           document.getElementById('ps-char-count').textContent = getCharCount(e.target.value, targetSchool);
           
-          // 동적 분할 텍스트 에어리어가 켜져있다면 그것도 동기화 해제 혹은 덮어쓰기 로직 필요
+          // 동적 분할 텍스트 에어리어가 켜져있다면 분할해서 복원
           const container = document.getElementById('ps-dynamic-details-container');
           if (container && container.style.display !== 'none') {
-             // 일단 복잡하므로 단일 텍스트박스 기준으로만 복원
-             alert('세부 항목 분할 모드에서는 과거 버전 텍스트가 단일 창으로만 보여집니다.');
+             const tas = container.querySelectorAll('.dynamic-ps-textarea');
+             let parts = e.target.value.includes('[상세분할]') ? e.target.value.split('[상세분할]') : [e.target.value];
+             tas.forEach((ta, idx) => {
+                 ta.value = parts[idx] !== undefined ? parts[idx].trim() : '';
+                 if (ta.oninput) ta.oninput();
+             });
           }
 
           const qNum = document.getElementById('ps-question-selector').value;
           const hData = window.PS_CURRENT_HISTORY;
           if (hData && hData.current) {
-            const curr = hData.current.find(c => c.qNum == qNum);
+            const curr = hData.current.find(c => String(c.qNum) == String(qNum));
             if (curr) {
               curr.text = e.target.value;
               isPsDirty = true;
@@ -2095,7 +2108,7 @@ function bindEventHandlers() {
     const qNum = document.getElementById('ps-question-selector').value;
     const hData = window.PS_CURRENT_HISTORY;
     if (hData && hData.current) {
-      const curr = hData.current.find(c => c.qNum == qNum);
+      const curr = hData.current.find(c => String(c.qNum) == String(qNum));
       if (curr) {
         curr.text = e.target.value;
         isPsDirty = true;
@@ -2108,7 +2121,7 @@ function bindEventHandlers() {
     const qNum = document.getElementById('ps-question-selector').value;
     const hData = window.PS_CURRENT_HISTORY;
     if (hData && hData.current) {
-      const curr = hData.current.find(c => c.qNum == qNum);
+      const curr = hData.current.find(c => String(c.qNum) == String(qNum));
       if (curr) {
         curr.feedback = e.target.value;
         isPsDirty = true;
