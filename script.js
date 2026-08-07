@@ -2042,7 +2042,7 @@ function bindEventHandlers() {
       
       const timestamp = selectedOption.dataset.timestamp;
       const qNum = document.getElementById('ps-question-selector').value;
-      const studentId = window.PS_TARGET_STUDENT;
+      const studentId = ACTIVE_PS_STUDENT;
       
       if (!timestamp || !qNum || !studentId) return;
 
