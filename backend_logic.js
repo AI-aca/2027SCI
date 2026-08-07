@@ -1643,8 +1643,7 @@ async function updateStudent(payload) {
       parent_contact: studentData.parentPhone || '',
       student_contact: studentData.studentPhone || '',
       math_teacher: studentData.mathTeacher || '',
-      science_teacher: studentData.sciTeacher || '',
-      student_link: studentData.studentLink || ''
+      science_teacher: studentData.sciTeacher || ''
     };
     const { error } = await window.supabaseClient.from('students').update(updateObj).eq('student_link', originalLink);
     if (error) throw error;
