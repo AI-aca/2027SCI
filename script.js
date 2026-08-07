@@ -1434,6 +1434,13 @@ function bindPersonalStatementToSelector(qNum) {
         lastText = textObj.text;
       }
     });
+
+    // 드롭다운에 추가된 가장 마지막 항목 = 직전 저장 버전 (보호 처리)
+    if (historySelector.options.length > 1) {
+      const lastOpt = historySelector.options[historySelector.options.length - 1];
+      lastOpt.dataset.is_protected = "true";
+      lastOpt.textContent += " [최소보호]";
+    }
   }
 }
 
@@ -2060,6 +2067,11 @@ function bindEventHandlers() {
       
       if (!recordId) {
         alert('삭제할 데이터의 고유 ID를 찾을 수 없습니다.');
+        return;
+      }
+      
+      if (selectedOption.dataset.is_protected === "true") {
+        alert('안전 보호: 직전 저장 버전(최소 2개)은 시스템 보호를 위해 삭제할 수 없습니다.');
         return;
       }
 
