@@ -1450,7 +1450,7 @@ async function savePersonalStatement(payload) {
     const { studentId, contents, writer } = payload;
     const now = new Date().toISOString();
     
-    const { data: student } = await window.supabaseClient.from('students').select('cover_letter_status, targetSchool, target_school').eq('student_link', studentId).single();
+    const { data: student } = await window.supabaseClient.from('students').select('cover_letter_status, target_school').eq('student_link', studentId).single();
     if (student && student.cover_letter_status === '작성전') {
       await window.supabaseClient.from('students').update({ cover_letter_status: '작성중' }).eq('student_link', studentId);
     }
