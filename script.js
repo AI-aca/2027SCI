@@ -1406,8 +1406,21 @@ function bindPersonalStatementToSelector(qNum) {
     historySelector.innerHTML = '<option value="" style="background-color: #1e293b; color: #f8fafc;">과거 버전 선택</option>';
     const historyList = window.PS_CURRENT_HISTORY.history || [];
     
+    // 현재 문항의 가장 마지막(최신) 스냅샷 인덱스 찾기
+    let latestIndex = -1;
+    for (let i = historyList.length - 1; i >= 0; i--) {
+      const t = historyList[i].texts.find(x => x.qNum == qNum);
+      if (t && t.text) {
+        latestIndex = i;
+        break;
+      }
+    }
+
     let lastText = '';
     historyList.forEach((h, index) => {
+      // 최신(현재) 버전은 과거 버전 드롭다운에서 제외
+      if (index === latestIndex) return;
+      
       const textObj = h.texts.find(t => t.qNum == qNum);
       if (textObj && textObj.text && textObj.text !== lastText) {
         const opt = document.createElement('option');
