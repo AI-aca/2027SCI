@@ -152,7 +152,7 @@ function parseMarkdownToHtml(text) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/^---$/gim, '<hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0;">')
-    .replace(/^### (.*$)/gim, '<h4 style="color: var(--color-primary); margin: 16px 0 8px 0; font-size: 16px;">$1</h4>')
+    .replace(/^### (.*$)/gim, '<h4 style="color: var(--color-primary); margin: 0 0 8px 0; font-size: 16px;">$1</h4>')
     .replace(/^## (.*$)/gim, '<h3 style="color: var(--color-primary); margin: 24px 0 10px 0; font-size: 18px; padding-top: 12px;">$1</h3>')
     .replace(/^# (.*$)/gim, '<h2 style="color: #fff; margin: 0 0 12px 0; font-size: 22px;">$1</h2>')
     .replace(/🗣️ 면접 질문:/gim, '<span style="color: var(--color-primary); font-weight: bold;">🗣️ 면접 질문:</span>')
