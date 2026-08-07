@@ -154,7 +154,7 @@ function parseMarkdownToHtml(text) {
     .replace(/^---$/gim, '<hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0;">')
     .replace(/^### (.*$)/gim, '<h4 style="color: var(--color-primary); margin: 16px 0 8px 0; font-size: 16px;">$1</h4>')
     .replace(/^## (.*$)/gim, '<h3 style="color: var(--color-primary); margin: 24px 0 10px 0; font-size: 18px; padding-top: 12px;">$1</h3>')
-    .replace(/^# (.*$)/gim, '<h2 style="color: #fff; margin: 24px 0 12px 0; font-size: 22px;">$1</h2>')
+    .replace(/^# (.*$)/gim, '<h2 style="color: #fff; margin: 0 0 12px 0; font-size: 22px;">$1</h2>')
     .replace(/🗣️ 면접 질문:/gim, '<span style="color: var(--color-primary); font-weight: bold;">🗣️ 면접 질문:</span>')
     .replace(/🎯 출제 의도:/gim, '<span style="color: var(--color-primary); font-weight: bold;">🎯 출제 의도:</span>')
     .replace(/🔗 꼬리 질문:/gim, '<span style="color: var(--color-primary); font-weight: bold;">🔗 꼬리 질문:</span>')
@@ -165,7 +165,8 @@ function parseMarkdownToHtml(text) {
     .replace(/\s*\[종합 총평\]\s*/g, '<br><br>');
     
   html = html.replace(/\n/g, '<br>');
-  html = html.replace(/(<\/h2>|<\/h3>|<\/h4>|<hr[^>]*>|<\/div>|<\/li>)<br>/g, '$1');
+  html = html.replace(/(<\/h2>|<\/h3>|<\/h4>|<hr[^>]*>|<\/div>|<\/li>)<br>*/g, '$1');
+  html = html.replace(/^(<br>)+/, ''); // 맨 앞 공백 치우기
   return html;
 }
 
