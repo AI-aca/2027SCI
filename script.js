@@ -1403,7 +1403,7 @@ function bindPersonalStatementToSelector(qNum) {
   // 타임머신 드롭다운 내용 갱신
   const historySelector = document.getElementById('ps-history-selector');
   if (historySelector && window.PS_CURRENT_HISTORY) {
-    historySelector.innerHTML = '<option value="">과거 버전 선택</option>';
+    historySelector.innerHTML = '<option value="" style="background-color: #1e293b; color: #f8fafc;">과거 버전 선택</option>';
     const historyList = window.PS_CURRENT_HISTORY.history || [];
     
     let lastText = '';
@@ -1414,6 +1414,8 @@ function bindPersonalStatementToSelector(qNum) {
         opt.value = textObj.text;
         opt.dataset.timestamp = h.timestamp; // 삭제용 timestamp
         opt.textContent = formatTimestamp(h.timestamp);
+        opt.style.backgroundColor = '#1e293b';
+        opt.style.color = '#f8fafc';
         historySelector.appendChild(opt);
         lastText = textObj.text;
       }
@@ -3661,15 +3663,24 @@ window.openPsViewerModal = async function(studentLink) {
 
       let html = '';
       hData.current.forEach(c => {
-        const qNum = parseInt(c.qNum);
-        const qData = questions[qNum - 1];
+        const qData = questions.find(q => q.label.trim() === String(c.qNum).trim());
         const qPrompt = qData ? qData.content : '문항 정보를 불러올 수 없습니다.';
-        const qTitle = (qData && qData.label) ? `[${qData.label}]` : `[문항 ${c.qNum}]`;
+        const qTitle = `[${c.qNum}]`;
+
+        let renderedText = '<span class="text-muted">내용 없음</span>';
+        if (c.text) {
+          if (c.text.includes('[상세분할]')) {
+            const parts = c.text.split('[상세분할]');
+            renderedText = parts.map((p, idx) => `<div style="margin-bottom: 12px; padding: 12px; border-radius: 6px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);"><strong style="color: var(--color-primary); font-size: 13px; display: block; margin-bottom: 6px;">[파트 ${idx+1}]</strong>${p.trim()}</div>`).join('');
+          } else {
+            renderedText = c.text;
+          }
+        }
 
         html += `<div style="margin-top: 20px;">`;
         html += `  <h4 style="color: #a5b4fc; margin-bottom: 8px;">${qTitle}</h4>`;
         html += `  <div style="font-size: 13px; color: #94a3b8; margin-bottom: 12px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; border-left: 3px solid #a5b4fc; line-height: 1.4;">${qPrompt}</div>`;
-        html += `  <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 6px; white-space: pre-wrap; font-size: 14px; line-height: 1.6;">${c.text || '<span class="text-muted">내용 없음</span>'}</div>`;
+        html += `  <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 6px; white-space: pre-wrap; font-size: 14px; line-height: 1.6;">${renderedText}</div>`;
         html += `</div>`;
       });
       viewerContent.innerHTML = html;

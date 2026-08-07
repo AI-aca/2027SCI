@@ -384,7 +384,7 @@
             <span style="color: #10b981; font-size: 16px; font-weight: bold; white-space: nowrap; display: flex; align-items: center;">
               <span class="pulse-dot"></span> 문항을 선택해 주세요
             </span>
-            <select class="ps-selector" id="ps-question-selector" style="font-size: 16px; background-color: #1e293b; color: #f8fafc; font-weight: 700; border: 2px solid #10b981; outline: none; border-radius: 4px; padding: 4px; width: 100%; max-width: 200px;">
+            <select class="ps-selector" id="ps-question-selector" style="font-size: 16px; background-color: #1e293b; color: #f8fafc; font-weight: 700; border: 2px solid #10b981; outline: none; border-radius: 4px; padding: 4px; width: 100%; max-width: 230px;">
               <option value="1">자기소개서 문항 1</option>
               <option value="2">자기소개서 문항 2</option>
               <option value="3">자기소개서 문항 3</option>
@@ -394,8 +394,8 @@
         </div>
         <div style="position: absolute; right: 50px; display: flex; align-items: center; gap: 8px;">
           <span style="color: var(--text-muted); font-size: 14px; white-space: nowrap;">이 문항의 과거버전:</span>
-          <select id="ps-history-selector" class="form-control" style="width: auto; padding: 4px 8px; font-size: 14px; background: #1e293b; color: #f8fafc; border: 1px solid var(--border-color); border-radius: 4px;">
-            <option value="">과거 버전 선택</option>
+          <select id="ps-history-selector" class="form-control" style="min-width: 200px; width: auto; padding: 4px 8px; font-size: 14px; background: #1e293b; color: #f8fafc; border: 1px solid var(--border-color); border-radius: 4px;">
+            <option value="" style="background-color: #1e293b; color: #f8fafc;">과거 버전 선택</option>
           </select>
           <button id="btn-delete-ps-history" style="display:none; margin-left: 8px; padding: 4px 10px; font-size: 13px; font-weight: 500; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; cursor: pointer; transition: all 0.2s ease; outline: none; align-items: center; justify-content: center;" onmouseover="this.style.background='rgba(239, 68, 68, 0.2)'; this.style.borderColor='rgba(239, 68, 68, 0.5)';" onmouseout="this.style.background='rgba(239, 68, 68, 0.1)'; this.style.borderColor='rgba(239, 68, 68, 0.3)';"><i class="fas fa-trash-alt" style="margin-right: 4px; font-size: 12px;"></i>삭제</button>
         </div>
