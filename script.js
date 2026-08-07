@@ -1413,7 +1413,6 @@ function bindPersonalStatementToSelector(qNum) {
         const opt = document.createElement('option');
         opt.value = textObj.text;
         opt.dataset.timestamp = h.timestamp; // 삭제용 timestamp
-        opt.dataset.qnum = textObj.qNum; // DB 매칭용 실제 question_no
         opt.textContent = formatTimestamp(h.timestamp);
         opt.style.backgroundColor = '#1e293b';
         opt.style.color = '#f8fafc';
@@ -2044,7 +2043,7 @@ function bindEventHandlers() {
       }
       
       const timestamp = selectedOption.dataset.timestamp;
-      const qNum = selectedOption.dataset.qnum || document.getElementById('ps-question-selector').value;
+      const qNum = document.getElementById('ps-question-selector').value;
       const studentId = ACTIVE_PS_STUDENT;
       
       if (!timestamp || !qNum || !studentId) return;
