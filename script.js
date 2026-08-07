@@ -603,7 +603,7 @@ function renderMainTable() {
       // 특별 컬럼 가공
       if (col.key === 'recordView') {
         if (student.recordPdf) {
-          td.innerHTML = `<a href="#" onclick="openPdfPreview('${student.recordPdf}', '${student.name || ''}'); return false;" class="link-action"><i class="fa-solid fa-file-pdf"></i> 보기</a>`;
+          td.innerHTML = `<button class="btn-action" style="padding: 2px 6px; font-size: 14px; background-color: var(--color-secondary); display: inline-flex;" onclick="openPdfPreview('${student.recordPdf}', '${student.name || ''}'); return false;"><i class="fa-solid fa-file-pdf"></i> 보기</button>`;
         } else {
           td.innerHTML = `<span class="text-muted">미업로드</span>`;
         }
@@ -628,7 +628,7 @@ function renderMainTable() {
       else if (col.key === 'recordBasis') {
         const val = student.recordScore;
         if (val && (CURRENT_ROLE === '교사' || CURRENT_ROLE === '관리자')) {
-          td.innerHTML = `<button class="btn-action" style="padding: 2px 6px; font-size: 14px; background-color: var(--color-primary); display: inline-flex;" onclick="openScoreDetailsModal('${student.studentLink}')"><i class="fa-solid fa-magnifying-glass"></i> 산정근거</button>`;
+          td.innerHTML = `<button class="btn-action" style="padding: 2px 6px; font-size: 14px; background-color: var(--color-secondary); display: inline-flex;" onclick="openScoreDetailsModal('${student.studentLink}')"><i class="fa-solid fa-magnifying-glass"></i> 산정근거</button>`;
         } else {
           td.innerHTML = `<span class="text-muted">-</span>`;
         }
@@ -654,7 +654,7 @@ function renderMainTable() {
                         </span>`;
       }
       else if (col.key === 'psViewer') {
-        td.innerHTML = `<button class="btn-action" style="padding: 4px 8px; font-size: 14px; background-color: var(--color-primary);" onclick="window.openPsViewerModal('${student.studentLink}')"><i class="fa-solid fa-eye"></i> 자소서 뷰어</button>`;
+        td.innerHTML = `<button class="btn-action" style="padding: 4px 8px; font-size: 14px; background-color: var(--color-secondary);" onclick="window.openPsViewerModal('${student.studentLink}')"><i class="fa-solid fa-eye"></i> 자소서 뷰어</button>`;
       } 
       else if (col.key === 'studentAnswers' || col.key === 'questions') {
         let btnAiQuestions = '';
@@ -756,7 +756,11 @@ function renderMainTable() {
         }
       }
       else if (col.key === 'name') {
-        td.innerHTML = '<strong>' + (val || '-') + '</strong>';
+        if (val) {
+          td.innerHTML = `<span style="background-color: rgba(255, 255, 255, 0.05); padding: 4px 12px; border-radius: 6px; font-weight: 700; border: 1px solid rgba(255, 255, 255, 0.05); display: inline-block;">${val}</span>`;
+        } else {
+          td.innerHTML = '<strong>-</strong>';
+        }
       }
       else {
         td.textContent = val || '-';

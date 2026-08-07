@@ -394,7 +394,10 @@ table.main-data-table td {
 }
 
 table.main-data-table th {
-  background-color: rgba(0, 0, 0, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: var(--bg-main);
   color: var(--text-muted);
   font-weight: 600;
   text-transform: uppercase;
