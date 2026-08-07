@@ -1381,7 +1381,7 @@ async function getPersonalStatementHistory(payload) {
       
       if (!currentStateMap[s.question_no]) {
         currentStateMap[s.question_no] = {
-          qNum: s.question_no, question: qText, answer: '', text: '', feedback: '', length: 0, version_label: s.version_label
+          qNum: s.question_no, question: qText, answer: '', text: '', feedback: '', length: 0, version_label: s.version_label, id: s.id
         };
       }
       
@@ -1391,6 +1391,7 @@ async function getPersonalStatementHistory(payload) {
         currentStateMap[s.question_no].answer = s.content;
         currentStateMap[s.question_no].length = s.content.length;
         currentStateMap[s.question_no].version_label = s.version_label;
+        currentStateMap[s.question_no].id = s.id;
       }
       // 과거 기록 호환성 유지 (구버전 피드백)
       if (s.teacher_feedback !== null && s.teacher_feedback !== undefined) {
@@ -1418,15 +1419,8 @@ async function getPersonalStatementHistory(payload) {
     const { data: teacherFeedbacks } = await window.supabaseClient.from('teacher_feedbacks').select('*').eq('student_link', studentId);
     (teacherFeedbacks || []).forEach(f => {
       let qNumStr = String(f.question_no);
-      let targetKey = qNumStr;
-      if (!currentStateMap[targetKey] && currentStateMap['문항' + targetKey]) {
-        targetKey = '문항' + targetKey;
-      } else if (!currentStateMap[targetKey] && currentStateMap[targetKey.replace('문항', '')]) {
-        targetKey = targetKey.replace('문항', '');
-      }
-
-      if (currentStateMap[targetKey]) {
-        currentStateMap[targetKey].feedback = f.feedback || '';
+      if (currentStateMap[qNumStr]) {
+        currentStateMap[qNumStr].feedback = f.feedback || '';
       }
     });
 
@@ -1517,16 +1511,18 @@ async function savePersonalStatement(payload) {
   }
 }
 
-window.deletePersonalStatementSnapshot = async function(studentId, qNum, timestamp) {
+window.deletePersonalStatementSnapshot = async function(recordId) {
   try {
-    const { error } = await window.supabaseClient
+    const { data, error } = await window.supabaseClient
       .from('personal_statements')
       .delete()
-      .eq('student_link', studentId)
-      .eq('question_no', qNum)
-      .eq('updated_at', timestamp);
+      .eq('id', recordId)
+      .select();
     
     if (error) throw error;
+    if (!data || data.length === 0) {
+      return { success: false, error: '삭제할 데이터를 찾지 못했습니다.' };
+    }
     return { success: true };
   } catch (err) {
     return { success: false, error: err.toString() };

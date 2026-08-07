@@ -1412,7 +1412,8 @@ function bindPersonalStatementToSelector(qNum) {
       if (textObj && textObj.text && textObj.text !== lastText) {
         const opt = document.createElement('option');
         opt.value = textObj.text;
-        opt.dataset.timestamp = h.timestamp; // 삭제용 timestamp
+        opt.dataset.timestamp = h.timestamp; // (구버전 호환용)
+        opt.dataset.record_id = textObj.id; // 삭제용 고유 ID
         opt.textContent = formatTimestamp(h.timestamp);
         opt.style.backgroundColor = '#1e293b';
         opt.style.color = '#f8fafc';
@@ -2042,14 +2043,15 @@ function bindEventHandlers() {
         return;
       }
       
-      const timestamp = selectedOption.dataset.timestamp;
-      const qNum = document.getElementById('ps-question-selector').value;
-      const studentId = ACTIVE_PS_STUDENT;
+      const recordId = selectedOption.dataset.record_id;
       
-      if (!timestamp || !qNum || !studentId) return;
+      if (!recordId) {
+        alert('삭제할 데이터의 고유 ID를 찾을 수 없습니다.');
+        return;
+      }
 
       if (confirm('정말 삭제하시겠습니까?')) {
-        const res = await window.deletePersonalStatementSnapshot(studentId, qNum, timestamp);
+        const res = await window.deletePersonalStatementSnapshot(recordId);
         if (res.success) {
           alert('삭제되었습니다.');
           selectedOption.remove();
