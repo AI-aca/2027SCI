@@ -87,27 +87,29 @@ async function generateAIChecklist(studentLink, qNum, statementText) {
     // 1. 해당 학생의 지원 학교 및 문항 내용 조회
     let qContent = '';
     let adminReqText = '';
-    const { data: student } = await window.supabaseClient.from('students').select('target_school').eq('student_link', studentLink).single();
-    if (student && student.target_school) {
-      const { data: qRows } = await window.supabaseClient.from('school_questions').select('item_no, content').eq('school_name', student.target_school);
-      if (qRows) {
-        const qRow = qRows.find(r => {
-          const numMatch = (r.item_no || '').match(/\d+/);
-          return (numMatch ? numMatch[0] : r.item_no) == qNum;
-        });
-        if (qRow) qContent = qRow.content || '';
-      }
-      
+    const { data: student } = await window.supabaseClient.from('students').select('*').eq('student_link', studentLink).single();
+    if (student) {
+      const tSchool = student.targetSchool || student.target_school;
       const { data: settingsRow } = await window.supabaseClient.from('settings').select('setting_value').eq('setting_key', 'schools').single();
       if (settingsRow && settingsRow.setting_value) {
         try {
           const schoolsData = JSON.parse(settingsRow.setting_value);
-          const matchedSchool = schoolsData.find(s => s.name === student.target_school);
+          const matchedSchool = schoolsData.find(s => s.name === tSchool);
           if (matchedSchool && matchedSchool.questions) {
-            const qData = matchedSchool.questions[qNum - 1];
-            if (qData && qData.details && qData.details.length > 0) {
-              const titles = qData.details.map((d, idx) => `${idx + 1}. ${d.title}`).join(', ');
-              adminReqText = `학생은 다음의 세부 주제들에 대해 작성해야 한다: ${titles}`;
+            // qNum이 "2-1" 형태일 수 있으므로 정확히 매칭 (우선 라벨 전체매칭 시도, 없으면 숫자부분 매칭)
+            let qRow = matchedSchool.questions.find(q => q.label == qNum);
+            if (!qRow) {
+              qRow = matchedSchool.questions.find(q => {
+                const numMatch = (q.label || '').match(/\d+/);
+                return (numMatch ? numMatch[0] : q.label) == qNum;
+              });
+            }
+            if (qRow) {
+              qContent = qRow.content || '';
+              if (qRow.details && qRow.details.length > 0) {
+                const titles = qRow.details.map((d, idx) => `${idx + 1}. ${d.title}`).join(', ');
+                adminReqText = `학생은 다음의 세부 주제들에 대해 작성해야 한다: ${titles}`;
+              }
             }
           }
         } catch (e) {
@@ -444,25 +446,8 @@ async function evaluateStudentRecord(studentId, recordText) {
       const { data: cached } = await window.supabaseClient.from('parsed_records').select('parsed_content').eq('student_link', effectiveLink).maybeSingle();
       if (cached && cached.parsed_content && cached.parsed_content.length >= 100) {
         textToAnalyze = cached.parsed_content;
-      } else if (student.record_link && (student.record_link.startsWith('http://') || student.record_link.startsWith('https://'))) {
-        // 2차: 생기부 PDF에서 OCR 텍스트 실시간 추출
-        textToAnalyze = await extractTextFromPdf(student.record_link);
-        if (textToAnalyze && textToAnalyze.length >= 100) {
-          // 다음 채점을 위해 parsed_records 캐시 보관 (SELECT -> UPDATE/INSERT)
-          const { data: existingParsed } = await window.supabaseClient.from('parsed_records').select('id').eq('student_link', effectiveLink).maybeSingle();
-          let prErr;
-          if (existingParsed && existingParsed.id) {
-            const res = await window.supabaseClient.from('parsed_records').update({ parsed_content: textToAnalyze }).eq('id', existingParsed.id);
-            prErr = res.error;
-          } else {
-            const res = await window.supabaseClient.from('parsed_records').insert({ student_link: effectiveLink, student_name: student.student_name || student.name || '', parsed_content: textToAnalyze });
-            prErr = res.error;
-          }
-          if (prErr) {
-            console.error('parsed_records 저장 에러:', prErr);
-            throw new Error('파싱 텍스트 캐시 저장에 실패했습니다: ' + prErr.message);
-          }
-        }
+      } else {
+        return { success: false, error: 'NOT_PARSED' };
       }
     }
     
@@ -689,6 +674,49 @@ async function evaluateStudentRecord(studentId, recordText) {
 }
 
 /**
+ * 순수 파싱 로직 (PDF -> OCR 텍스트 추출 후 캐시 저장)
+ */
+async function parseStudentRecord(payload) {
+  try {
+    const studentId = payload.studentId || payload;
+    let { data: student } = await window.supabaseClient.from('students').select('*').eq('student_link', studentId).maybeSingle();
+    if (!student) {
+      const { data: studentById } = await window.supabaseClient.from('students').select('*').eq('id', studentId).maybeSingle();
+      student = studentById;
+    }
+    if (!student) throw new Error('학생 정보를 수파베이스에서 찾을 수 없습니다.');
+    
+    const effectiveLink = student.student_link || student.id;
+    if (!student.record_link || (!student.record_link.startsWith('http://') && !student.record_link.startsWith('https://'))) {
+      throw new Error('유효한 생기부 PDF 링크가 없습니다. 구글 드라이브에 파일을 업로드해주세요.');
+    }
+
+    const textToAnalyze = await extractTextFromPdf(student.record_link);
+    if (!textToAnalyze || textToAnalyze.length < 100) {
+      throw new Error('파싱된 텍스트가 너무 짧거나 추출에 실패했습니다.');
+    }
+
+    const { data: existingParsed } = await window.supabaseClient.from('parsed_records').select('id').eq('student_link', effectiveLink).maybeSingle();
+    let prErr;
+    if (existingParsed && existingParsed.id) {
+      const res = await window.supabaseClient.from('parsed_records').update({ parsed_content: textToAnalyze }).eq('id', existingParsed.id);
+      prErr = res.error;
+    } else {
+      const res = await window.supabaseClient.from('parsed_records').insert({ student_link: effectiveLink, student_name: student.student_name || student.name || '', parsed_content: textToAnalyze });
+      prErr = res.error;
+    }
+    
+    if (prErr) {
+      throw new Error('파싱 텍스트 캐시 저장에 실패했습니다: ' + prErr.message);
+    }
+    
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.toString() };
+  }
+}
+
+/**
  * PDF 텍스트 추출 모듈 (extractTextFromPdf)
  */
 async function extractTextFromPdf(fileUrl) {
@@ -815,6 +843,9 @@ function calculateRecordScore(data) {
     else if (String(g).includes('C')) mathPenalty += 20;
     else if (String(g).includes('D') || String(g).includes('E')) mathPenalty += 25;
   });
+  if (mathGrades.length < 3) {
+    mathPenalty += (3 - mathGrades.length) * 25;
+  }
   scores.area1_item1 = Math.max(0, 40 - mathPenalty);
 
   const sciGrades = dedupe(data.sciGrades);
@@ -824,13 +855,35 @@ function calculateRecordScore(data) {
     else if (String(g).includes('C')) sciPenalty += 20;
     else if (String(g).includes('D') || String(g).includes('E')) sciPenalty += 25;
   });
+  if (sciGrades.length < 3) {
+    sciPenalty += (3 - sciGrades.length) * 25;
+  }
   scores.area1_item2 = Math.max(0, 40 - sciPenalty);
 
   const drops = data.gradeDropsExtracted || { korEng: [], socHisInfo: [], moralTech: [] };
-  const gradeDropsKorEng = dedupe(drops.korEng).length;
-  const gradeDropsSocHisInfo = dedupe(drops.socHisInfo).length;
-  const gradeDropsMoralTech = dedupe(drops.moralTech).length;
-  scores.area1_item3 = Math.max(0, 25 - (gradeDropsKorEng * 10) - (gradeDropsSocHisInfo * 5) - (gradeDropsMoralTech * 3));
+  
+  const calcDrops = (arr) => {
+    let totalDrops = 0;
+    dedupe(arr).forEach(str => {
+      const match = String(str).match(/[BCDE]/);
+      if (match) {
+        if (match[0] === 'B') totalDrops += 1;
+        else if (match[0] === 'C') totalDrops += 2;
+        else if (match[0] === 'D') totalDrops += 3;
+        else if (match[0] === 'E') totalDrops += 4;
+      }
+      if (String(str).includes('누락')) {
+        totalDrops += 2;
+      }
+    });
+    return totalDrops;
+  };
+
+  const dropsKorEng = calcDrops(drops.korEng);
+  const dropsSocHisInfo = calcDrops(drops.socHisInfo);
+  const dropsMoralTech = calcDrops(drops.moralTech);
+  
+  scores.area1_item3 = Math.max(0, 25 - (dropsKorEng * 10) - (dropsSocHisInfo * 5) - (dropsMoralTech * 3));
 
   scores.area1_item4 = Math.min(10, dedupe(data.mathSciClubsExtracted).length * 2);
   scores.area1_item5 = Math.min(10, dedupe(data.totalAwardsExtracted.filter(a => !a.includes('교과'))).length * 2);
@@ -1051,8 +1104,24 @@ function generateScoreCardsData(d, scores, role = '관리자') {
   };
 
   const specs = [
-    { key: 'area1_item1', range: '🔍 탐색 범위: 교과학습발달상황(성취도) 표 전체 (1, 2, 3학년 총 3개 학년)', title: '1. 최근 3학기 수학 성취도', max: 40, desc: 'B등급 -15점, C등급 -20점, D/E등급 -25점', getQuote: (d) => getArrText(d.mathGrades) },
-    { key: 'area1_item2', range: '🔍 탐색 범위: 교과학습발달상황(성취도) 표 전체 (1, 2, 3학년 총 3개 학년)', title: '2. 최근 3학기 과학 성취도', max: 40, desc: 'B등급 -15점, C등급 -20점, D/E등급 -25점', getQuote: (d) => getArrText(d.sciGrades) },
+    { key: 'area1_item1', range: '🔍 탐색 범위: 교과학습발달상황(성취도) 표 전체 (1, 2, 3학년 총 3개 학년)', title: '1. 최근 3학기 수학 성취도', max: 40, desc: 'B등급 -15점, C등급 -20점, D/E등급 -25점', getQuote: (d) => {
+        let arr = getArrText(d.mathGrades);
+        const expected = ['2-1', '2-2', '3-1'];
+        let textJoined = arr.join(' ');
+        expected.forEach(term => {
+          if (!textJoined.includes(term)) arr.push(`${term}학기 성적 누락 (-25점)`);
+        });
+        return arr;
+    } },
+    { key: 'area1_item2', range: '🔍 탐색 범위: 교과학습발달상황(성취도) 표 전체 (1, 2, 3학년 총 3개 학년)', title: '2. 최근 3학기 과학 성취도', max: 40, desc: 'B등급 -15점, C등급 -20점, D/E등급 -25점', getQuote: (d) => {
+        let arr = getArrText(d.sciGrades);
+        const expected = ['2-1', '2-2', '3-1'];
+        let textJoined = arr.join(' ');
+        expected.forEach(term => {
+          if (!textJoined.includes(term)) arr.push(`${term}학기 성적 누락 (-25점)`);
+        });
+        return arr;
+    } },
     { key: 'area1_item3', range: '🔍 탐색 범위: 교과학습발달상황(성취도) 표 전체 (1, 2, 3학년 총 3개 학년)', title: '3. 주요과목 등급 유지도', max: 25, desc: '국/영 -10점, 사/역/정 -5점, 도덕/기가 -3점 (1회당)', getQuote: (d) => getDropText(d.gradeDropsExtracted) },
     { key: 'area1_item4', range: '🔍 탐색 범위: 창의적 체험활동 중 동아리활동 (1, 2, 3학년 총 3개 학년)', title: '4. 수/과학 관련 동아리', max: 10, desc: '동아리 개수당 2점 가산', getQuote: (d) => getArrText(d.mathSciClubsExtracted) },
     { key: 'area1_item5', range: '🔍 탐색 범위: 수상경력 표 전체 (1, 2, 3학년 총 3개 학년)', title: '5. 학기당 수상 실적', max: 10, desc: '실적당 2점 가산 (교과상 제외)', getQuote: (d) => getArrText(d.totalAwardsExtracted) },
@@ -1797,6 +1866,7 @@ window.saveSettings = saveSettings;
 window.generateAIFeedback = generateAIFeedback;
 window.generateAIQuestions = generateAIQuestions;
 window.evaluateStudentRecord = evaluateStudentRecord;
+window.parseStudentRecord = parseStudentRecord;
 window.uploadStudentRecordPdf = uploadStudentRecordPdf;
 window.extractTextFromPdf = extractTextFromPdf;
 

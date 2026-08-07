@@ -340,7 +340,8 @@ function applyRoleUI(role) {
 }
 
 let PDF_TARGET_STUDENT = null;
-window.triggerPdfUpload = function(studentLink) {
+window.triggerPdfUpload = function(studentLink, isReupload) {
+  if (isReupload && !confirm('기존 생기부 파일이 이미 존재합니다. 재업로드하시면 기존 생기부가 덮어씌워집니다. 계속하시겠습니까?')) return;
   PDF_TARGET_STUDENT = studentLink;
   const fileInput = document.getElementById('student-record-pdf-input');
   if (fileInput) {
@@ -603,8 +604,9 @@ function renderMainTable() {
       }
       else if (col.key === 'recordUpload') {
         if (CURRENT_ROLE === '교사' || CURRENT_ROLE === '관리자') {
-          const btnText = student.recordPdf ? '재업로드' : '업로드';
-          td.innerHTML = `<button class="btn-action" style="padding: 2px 6px; font-size: 14px; display: inline-flex;" onclick="triggerPdfUpload('${student.studentLink}')"><i class="fa-solid fa-upload"></i> ${btnText}</button>`;
+          const isReupload = !!student.recordPdf;
+          const btnText = isReupload ? '재업로드' : '업로드';
+          td.innerHTML = `<button class="btn-action" style="padding: 2px 6px; font-size: 14px; display: inline-flex;" onclick="triggerPdfUpload('${student.studentLink}', ${isReupload})"><i class="fa-solid fa-upload"></i> ${btnText}</button>`;
         } else {
           td.innerHTML = `<span class="text-muted">-</span>`;
         }
@@ -1041,8 +1043,8 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual') {
   } else {
     const btnGen = document.getElementById('btn-generate-ai-checklist');
     const btnReset = document.getElementById('btn-reset-ai-checklist');
-    if (btnGen) btnGen.style.display = 'block';
-    if (btnReset) btnReset.style.display = 'block';
+    if (btnGen) btnGen.style.display = 'inline-block';
+    if (btnReset) btnReset.style.display = (CURRENT_ROLE === '관리자') ? 'inline-block' : 'none';
   }
   
   document.getElementById('modal-ps-editor').classList.add('open');
@@ -1294,7 +1296,7 @@ function bindPersonalStatementToSelector(qNum) {
          const totalCnt = getCharCount(cleanTextForCount, targetSchool);
          document.getElementById('ps-char-count').textContent = totalCnt;
          
-         const currentQNum = parseInt(document.getElementById('ps-question-selector').value);
+         const currentQNum = document.getElementById('ps-question-selector').value;
          const hData = window.PS_CURRENT_HISTORY;
          if (hData && hData.current) {
            const curr = hData.current.find(c => c.qNum == currentQNum);
@@ -1370,6 +1372,21 @@ function bindPersonalStatementToSelector(qNum) {
       </div>`;
       const chkTitle = checklistContainer.closest('.checklist-area').querySelector('h4');
       if (chkTitle) chkTitle.innerHTML = `항목별 체크리스트 확인하기`;
+    }
+  }
+  
+  // AI 도움받기 바인딩 (해당 문항의 최신 내역 로드)
+  const aiContainer = document.getElementById('ai-feedback-container');
+  if (aiContainer) {
+    const aiLog = hData.aiHistory || [];
+    const currentType = '문항' + qNum + '_도움받기';
+    const targetAILogs = aiLog.filter(log => log.type === currentType);
+    if (targetAILogs.length > 0) {
+      aiContainer.innerHTML = parseMarkdown(targetAILogs[targetAILogs.length - 1].feedback);
+    } else {
+      aiContainer.innerHTML = `<div style="text-align:center; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-muted); word-break: keep-all; padding: 10px;">
+                                 아직 생성된 AI 피드백이 없습니다.
+                               </div>`;
     }
   }
   
@@ -2854,6 +2871,9 @@ function renderScoreBasisCards(cards, role) {
                      if (role !== '관리자') {
                        displayQ = displayQ.replace(/소계\s*\d+(\.\d+)?점/g, '').trim();
                      }
+                     if (role === '교사') {
+                       displayQ = displayQ.replace(/\(-25점\)/g, '').trim();
+                     }
                      if (q.includes('학기]') || q.includes('학년]')) {
                        let html = '<li style="margin-top: 12px; color: var(--color-warning, #ffeb3b); font-weight: bold; list-style: none; margin-left: -20px;">▶ ' + displayQ + '</li>';
                        const nextQ = arr[idx + 1];
@@ -3429,15 +3449,18 @@ async function runSingleAIQuestions(studentId, mode) {
 }
 
 async function reparseRecord(studentId) {
-  if (!confirm('정말 해당 학생의 생기부를 재파싱 하시겠습니까? (기존 파싱 데이터 삭제 후 즉시 재채점 됩니다)')) return;
+  if (!confirm('정말 해당 학생의 생기부를 재파싱 하시겠습니까? (기존 파싱 데이터가 삭제되고 새롭게 문자를 추출합니다. 채점은 진행되지 않습니다.)')) return;
+  showProgressBar('생기부 텍스트 파싱 중...', 1);
+  updateProgressBar(0, 1, 'PDF에서 텍스트를 추출하는 중...');
   try {
-    if (window.supabaseClient) {
-      const { error } = await window.supabaseClient.from('parsed_records').delete().eq('student_link', studentId);
-      if (error) throw error;
-    }
-    await runSingleAIEval(studentId);
+    const res = await ApiClient.post('parseStudentRecord', { studentId });
+    if (!res.success) throw new Error(res.error);
+    updateProgressBar(1, 1, '파싱 완료!');
+    alert('생기부 파싱이 성공적으로 완료되었습니다! 이제 [재채점] 버튼을 눌러 채점을 진행해주세요.');
   } catch(e) {
     alert('재파싱 오류: ' + e.message);
+  } finally {
+    hideProgressBar();
   }
 }
 
@@ -3447,7 +3470,13 @@ async function runSingleAIEval(studentId) {
   updateProgressBar(0, 1, '생기부 분석 및 채점 진행 중...');
   try {
     const res = await ApiClient.post('evaluateStudentRecord', { studentId, recordText: null });
-    if (!res.success) throw new Error(res.error);
+    if (!res.success) {
+      if (res.error === 'NOT_PARSED') {
+        alert('생기부 파싱 데이터가 없습니다. 먼저 [재파싱] 버튼을 눌러 파싱을 진행해주세요.');
+        return;
+      }
+      throw new Error(res.error);
+    }
     updateProgressBar(1, 1, '채점 완료!');
     alert('생기부 AI 수동 채점 완료!');
     loadStudentsData();
@@ -3568,7 +3597,7 @@ window.saveMemo = async function() {
 window.generateChecklist = async function() {
   if (!ACTIVE_PS_STUDENT) return;
   
-  const qNum = parseInt(document.getElementById('ps-question-selector').value);
+  const qNum = document.getElementById('ps-question-selector').value;
   const textVal = window.getCurrentPsText ? window.getCurrentPsText(true) : document.getElementById('ps-content-textarea').value;
   if (!textVal || textVal.trim() === '') {
     alert('자소서 내용이 비어있습니다.');

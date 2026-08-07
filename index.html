@@ -378,19 +378,25 @@
     <div class="modal-container" style="max-width: 95vw; width: 100%; max-height: 95vh; height: 95vh;">
       <div class="modal-header">
         <h3 id="ps-modal-title">자기소개서 첨삭 및 편집기</h3>
-        <div class="ps-control-bar" style="position: absolute; left: 50%; transform: translateX(-50%); display: flex; justify-content: center; width: 100%; max-width: 400px; align-items: center;">
+        <div class="ps-control-bar" style="position: absolute; left: 50%; transform: translateX(-50%); display: flex; justify-content: center; width: 100%; max-width: 600px; align-items: center;">
           <span id="ps-school-name" style="display:none;"></span>
-          <div style="position: relative; width: 100%; display: flex; justify-content: center; align-items: center;">
-            <select class="ps-selector" id="ps-question-selector" style="font-size: 16px; background-color: #1e293b; color: #f8fafc; font-weight: 700; border: 2px solid #10b981; outline: none; border-radius: 4px; padding: 4px; width: 100%; max-width: 300px; position: relative; z-index: 2;">
+          <div style="position: relative; width: 100%; display: flex; justify-content: center; align-items: center; gap: 10px;">
+            <span style="color: #10b981; font-size: 16px; font-weight: bold; white-space: nowrap; display: flex; align-items: center;">
+              <span class="pulse-dot"></span> 문항을 선택해 주세요
+            </span>
+            <select class="ps-selector" id="ps-question-selector" style="font-size: 16px; background-color: #1e293b; color: #f8fafc; font-weight: 700; border: 2px solid #10b981; outline: none; border-radius: 4px; padding: 4px; width: 100%; max-width: 200px;">
               <option value="1">자기소개서 문항 1</option>
               <option value="2">자기소개서 문항 2</option>
               <option value="3">자기소개서 문항 3</option>
               <option value="4">자기소개서 문항 4</option>
             </select>
-            <span style="position: absolute; left: calc(50% + 160px); top: 50%; transform: translateY(-50%); color: #10b981; font-size: 16px; font-weight: bold; white-space: nowrap; z-index: 1; display: flex; align-items: center;">
-              <span class="pulse-dot"></span> 문항을 선택해 주세요
-            </span>
           </div>
+        </div>
+        <div style="position: absolute; right: 50px; display: flex; align-items: center; gap: 8px;">
+          <span style="color: var(--text-muted); font-size: 14px; white-space: nowrap;">이 문항의 과거버전:</span>
+          <select id="ps-history-selector" class="form-control" style="width: auto; padding: 4px 8px; font-size: 14px; background: #1e293b; color: #f8fafc; border: 1px solid var(--border-color); border-radius: 4px;">
+            <option value="">과거 버전 선택</option>
+          </select>
         </div>
         <button class="btn-close" id="btn-close-ps-modal">&times;</button>
       </div>

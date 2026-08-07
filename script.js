@@ -2027,7 +2027,60 @@ function bindEventHandlers() {
   // 자소서 문항 드롭다운 연동
   document.getElementById('ps-question-selector').onchange = (e) => {
     bindPersonalStatementToSelector(e.target.value);
+    
+    // 타임머신 드롭다운 내용 갱신
+    const historySelector = document.getElementById('ps-history-selector');
+    if (historySelector && window.PS_CURRENT_HISTORY) {
+      historySelector.innerHTML = '<option value="">과거 버전 선택</option>';
+      const qNum = e.target.value;
+      const historyList = window.PS_CURRENT_HISTORY.history || [];
+      
+      let lastText = '';
+      historyList.forEach((h, index) => {
+        const textObj = h.texts.find(t => t.qNum == qNum);
+        if (textObj && textObj.text && textObj.text !== lastText) {
+          const opt = document.createElement('option');
+          opt.value = textObj.text;
+          opt.textContent = formatTimestamp(h.timestamp);
+          historySelector.appendChild(opt);
+          lastText = textObj.text;
+        }
+      });
+    }
   };
+
+  // 타임머신 드롭다운 변경 연동
+  const historySelector = document.getElementById('ps-history-selector');
+  if (historySelector) {
+    historySelector.onchange = (e) => {
+      if (e.target.value) {
+        if (confirm('선택하신 과거 버전으로 자소서 내용을 되돌리시겠습니까? (저장하지 않으면 원본이 유지됩니다.)')) {
+          document.getElementById('ps-content-textarea').value = e.target.value;
+          const targetSchool = document.getElementById('ps-school-name').textContent.replace('지원 학교: ', '');
+          document.getElementById('ps-char-count').textContent = getCharCount(e.target.value, targetSchool);
+          
+          // 동적 분할 텍스트 에어리어가 켜져있다면 그것도 동기화 해제 혹은 덮어쓰기 로직 필요
+          const container = document.getElementById('ps-dynamic-details-container');
+          if (container && container.style.display !== 'none') {
+             // 일단 복잡하므로 단일 텍스트박스 기준으로만 복원
+             alert('세부 항목 분할 모드에서는 과거 버전 텍스트가 단일 창으로만 보여집니다.');
+          }
+
+          const qNum = document.getElementById('ps-question-selector').value;
+          const hData = window.PS_CURRENT_HISTORY;
+          if (hData && hData.current) {
+            const curr = hData.current.find(c => c.qNum == qNum);
+            if (curr) {
+              curr.text = e.target.value;
+              isPsDirty = true;
+            }
+          }
+        } else {
+          e.target.value = '';
+        }
+      }
+    };
+  }
   
   // 자소서 모달 내 수기/AI 탭 전환
   document.getElementById('tab-btn-manual-feedback').onclick = () => switchTab('manual');
@@ -2087,11 +2140,14 @@ function bindEventHandlers() {
       const oldPs = orig ? orig.text : '';
       const oldFb = orig ? orig.feedback : '';
       
-      if (curr.text !== oldPs) {
-        contents.push({ qNum: curr.qNum, text: curr.text, type: '자소서' });
-      }
-      if (curr.feedback !== oldFb) {
-        contents.push({ qNum: curr.qNum, text: curr.feedback, type: '피드백' });
+      if (CURRENT_ROLE === '학생') {
+        if (curr.text !== oldPs) {
+          contents.push({ qNum: curr.qNum, text: curr.text, type: '자소서' });
+        }
+      } else {
+        if (curr.feedback !== oldFb) {
+          contents.push({ qNum: curr.qNum, text: curr.feedback, type: '피드백' });
+        }
       }
     });
     

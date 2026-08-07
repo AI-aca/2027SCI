@@ -1392,6 +1392,7 @@ async function getPersonalStatementHistory(payload) {
         currentStateMap[s.question_no].length = s.content.length;
         currentStateMap[s.question_no].version_label = s.version_label;
       }
+      // 과거 기록 호환성 유지 (구버전 피드백)
       if (s.teacher_feedback !== null && s.teacher_feedback !== undefined) {
         currentStateMap[s.question_no].feedback = s.teacher_feedback;
       }
@@ -1401,7 +1402,7 @@ async function getPersonalStatementHistory(payload) {
         // 이전 스냅샷의 현재 상태를 깊은 복사하여 저장
         historyLogs.push({
           timestamp: s.updated_at,
-          type: s.content !== null ? '자소서' : '피드백',
+          type: '자소서', // 히스토리는 이제 무조건 자소서만 취급
           texts: JSON.parse(JSON.stringify(Object.values(currentStateMap)))
         });
         lastUpdatedAt = s.updated_at;
@@ -1409,8 +1410,16 @@ async function getPersonalStatementHistory(payload) {
         // 같은 시점 배치 업데이트의 경우, 배열 마지막 스냅샷의 texts를 갱신
         if (historyLogs.length > 0) {
           historyLogs[historyLogs.length - 1].texts = JSON.parse(JSON.stringify(Object.values(currentStateMap)));
-          if (s.teacher_feedback !== null) historyLogs[historyLogs.length - 1].type = '피드백';
         }
+      }
+    });
+
+    // 별도의 teacher_feedbacks 테이블에서 피드백 최신본 덮어쓰기
+    const { data: teacherFeedbacks } = await window.supabaseClient.from('teacher_feedbacks').select('*').eq('student_link', studentId);
+    (teacherFeedbacks || []).forEach(f => {
+      const qNumStr = String(f.question_no);
+      if (currentStateMap[qNumStr]) {
+        currentStateMap[qNumStr].feedback = f.feedback || '';
       }
     });
 
@@ -1479,46 +1488,20 @@ async function savePersonalStatement(payload) {
     // 1. 자소서가 변경된 문항은 무조건 새로운 히스토리 행을 insert
     for (const qNum in newSnapshots) {
       const row = newSnapshots[qNum];
-      // 만약 피드백도 같이 변경되었다면 새 행에 포함
-      if (feedbackUpdates[qNum] !== undefined) {
-        row.teacher_feedback = feedbackUpdates[qNum];
-        delete feedbackUpdates[qNum]; // 업데이트 목록에서 제외
-      }
       const { error: insErr } = await window.supabaseClient.from('personal_statements').insert(row);
       if (insErr) throw insErr;
     }
 
-    // 2. 피드백만 단독으로 변경된 문항은 최신 행을 찾아 update (히스토리 누적 방지)
+    // 2. 피드백이 변경된 문항은 teacher_feedbacks 테이블에 upsert
     for (const qNum in feedbackUpdates) {
-      const { data: latestRows, error: fetchErr } = await window.supabaseClient
-        .from('personal_statements')
-        .select('id')
-        .eq('student_link', studentId)
-        .eq('question_no', qNum)
-        .order('updated_at', { ascending: false })
-        .limit(1);
-        
-      if (fetchErr) throw fetchErr;
-      
-      if (latestRows && latestRows.length > 0) {
-        // 기존 레코드에 피드백 덮어쓰기 (자소서 snapshot의 시간은 유지)
-        const { error: updErr } = await window.supabaseClient
-          .from('personal_statements')
-          .update({ teacher_feedback: feedbackUpdates[qNum] })
-          .eq('id', latestRows[0].id);
-        if (updErr) throw updErr;
-      } else {
-        // 기존 행이 없으면 최초 1개 생성
-        const { error: insErr2 } = await window.supabaseClient
-          .from('personal_statements')
-          .insert({
-            student_link: studentId,
-            question_no: qNum,
-            teacher_feedback: feedbackUpdates[qNum],
-            updated_at: now
-          });
-        if (insErr2) throw insErr2;
-      }
+      const fbPayload = {
+        student_link: studentId,
+        question_no: qNum,
+        feedback: feedbackUpdates[qNum],
+        updated_at: now
+      };
+      const { error: updErr } = await window.supabaseClient.from('teacher_feedbacks').upsert(fbPayload, { onConflict: 'student_link,question_no' });
+      if (updErr) throw updErr;
     }
     
     return { success: true };
