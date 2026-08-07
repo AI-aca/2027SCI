@@ -1418,9 +1418,6 @@ function bindPersonalStatementToSelector(qNum) {
 
     let lastText = '';
     historyList.forEach((h, index) => {
-      // 최신(현재) 버전은 과거 버전 드롭다운에서 제외
-      if (index === latestIndex) return;
-      
       const textObj = h.texts.find(t => t.qNum == qNum);
       if (textObj && textObj.text && textObj.text !== lastText) {
         const opt = document.createElement('option');
@@ -1430,16 +1427,27 @@ function bindPersonalStatementToSelector(qNum) {
         opt.textContent = formatTimestamp(h.timestamp);
         opt.style.backgroundColor = '#1e293b';
         opt.style.color = '#f8fafc';
+        
+        if (index === latestIndex) {
+          opt.dataset.is_protected = "true";
+          opt.textContent += " (최신)";
+        }
+        
         historySelector.appendChild(opt);
         lastText = textObj.text;
       }
     });
 
-    // 드롭다운에 추가된 가장 마지막 항목 = 직전 저장 버전 (보호 처리)
-    if (historySelector.options.length > 1) {
-      const lastOpt = historySelector.options[historySelector.options.length - 1];
-      lastOpt.dataset.is_protected = "true";
-      lastOpt.textContent += " [최소보호]";
+    // 드롭다운 항목 중 직전 버전(두 번째 최신) 찾아서 보호 처리
+    const opts = historySelector.options;
+    if (opts.length > 2) {
+      const secondLatestOpt = opts[opts.length - 2];
+      secondLatestOpt.dataset.is_protected = "true";
+      secondLatestOpt.textContent += " [보호됨]";
+    } else if (opts.length === 2 && !opts[1].textContent.includes('(최신)')) {
+      // 예외: 최신버전 하나만 있는데 latestIndex 조건에 안 걸렸을 경우를 대비
+      opts[1].dataset.is_protected = "true";
+      opts[1].textContent += " [최소보호]";
     }
   }
 }
