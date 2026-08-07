@@ -989,7 +989,7 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual') {
       opt.style.color = '#f8fafc';
       
       // 드롭다운에는 짧은 텍스트만 렌더링
-      opt.textContent = shortLabel; 
+      opt.textContent = `[${studentSchool}] ${shortLabel}`; 
       
       let textToShow = fullQuestionText;
       // 추가 content 데이터가 있다면 합치기

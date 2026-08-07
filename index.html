@@ -10,7 +10,7 @@
   <!-- Supabase 라이브러리 및 PDF.js 캔버스 뷰어 추가 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="backend_logic.js?v=20260806_03"></script>
+  <script src="backend_logic.js?v=20260807_01"></script>
 </head>
 <body>
   <!-- 전역 통신 로딩 인디케이터 -->
@@ -361,17 +361,17 @@
     <div class="modal-container" style="max-width: 95vw; width: 100%; max-height: 95vh; height: 95vh;">
       <div class="modal-header">
         <h3 id="ps-modal-title">자기소개서 첨삭 및 편집기</h3>
-        <div class="ps-control-bar" style="position: absolute; left: 50%; transform: translateX(-50%); display: flex; justify-content: center; gap: 10px;">
+        <div class="ps-control-bar" style="position: absolute; left: 50%; transform: translateX(-50%); display: flex; justify-content: center; width: 100%; max-width: 400px; align-items: center;">
           <span id="ps-school-name" style="display:none;"></span>
-          <select class="ps-selector" id="ps-question-selector" style="font-size: 16px; background-color: #1e293b; color: #f8fafc; font-weight: 700; border: 2px solid #10b981; outline: none; border-radius: 4px; padding: 4px;">
-            <option value="1">자기소개서 문항 1</option>
-            <option value="2">자기소개서 문항 2</option>
-            <option value="3">자기소개서 문항 3</option>
-            <option value="4">자기소개서 문항 4</option>
-          </select>
-          <select class="ps-selector" id="ps-version-selector" style="font-size: 16px;">
-            <option value="current">⭐ 최신 작성 내용</option>
-          </select>
+          <div style="position: relative; width: 100%; display: flex; justify-content: center; align-items: center;">
+            <select class="ps-selector" id="ps-question-selector" style="font-size: 16px; background-color: #1e293b; color: #f8fafc; font-weight: 700; border: 2px solid #10b981; outline: none; border-radius: 4px; padding: 4px; width: 100%; max-width: 300px; position: relative; z-index: 2;">
+              <option value="1">자기소개서 문항 1</option>
+              <option value="2">자기소개서 문항 2</option>
+              <option value="3">자기소개서 문항 3</option>
+              <option value="4">자기소개서 문항 4</option>
+            </select>
+            <span style="position: absolute; left: calc(50% + 160px); top: 50%; transform: translateY(-50%); color: #10b981; font-size: 13px; font-weight: bold; white-space: nowrap; z-index: 1;"><i class="fa-solid fa-hand-point-left"></i> 문항을 선택하세요</span>
+          </div>
         </div>
         <button class="btn-close" id="btn-close-ps-modal">&times;</button>
       </div>
@@ -609,6 +609,6 @@
   -->
 
   <!-- script.js 프론트엔드 액션 제어 스크립트 연결 -->
-  <script src="script.js?v=20260806_08"></script>
+  <script src="script.js?v=20260807_01"></script>
 </body>
 </html>
