@@ -1484,7 +1484,7 @@ async function savePersonalStatement(payload) {
         row.teacher_feedback = feedbackUpdates[qNum];
         delete feedbackUpdates[qNum]; // 업데이트 목록에서 제외
       }
-      const { error: insErr } = await window.supabaseClient.from('personal_statements').upsert(row, { onConflict: 'student_link, question_no, version_label' });
+      const { error: insErr } = await window.supabaseClient.from('personal_statements').insert(row);
       if (insErr) throw insErr;
     }
 
