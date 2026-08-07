@@ -965,13 +965,6 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual') {
   if (psSelector) {
     psSelector.innerHTML = '';
     questions.forEach((q, idx) => {
-      const opt = document.createElement('option');
-      opt.value = idx + 1;
-      // OS 다크모드 렌더링 충돌 방지를 위해 JS 인라인 스타일을 다시 강제 주입 (캐시 무시)
-      opt.style.backgroundColor = '#1e293b';
-      opt.style.color = '#f8fafc';
-      
-      // q.label이 "문항 1. 질문내용..." 처럼 긴 텍스트를 포함할 경우 강제 분리 처리
       let shortLabel = q.label;
       let fullQuestionText = q.label; 
       
@@ -988,6 +981,12 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual') {
         shortLabel = q.label;
         fullQuestionText = "";
       }
+      
+      const opt = document.createElement('option');
+      opt.value = shortLabel.replace('문항 ', '').trim();
+      // OS 다크모드 렌더링 충돌 방지를 위해 JS 인라인 스타일을 다시 강제 주입 (캐시 무시)
+      opt.style.backgroundColor = '#1e293b';
+      opt.style.color = '#f8fafc';
       
       // 드롭다운에는 짧은 텍스트만 렌더링
       opt.textContent = shortLabel; 
@@ -1015,18 +1014,41 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual') {
     
     if (!historyData.current) historyData.current = [];
     const maxQNum = questions.length;
-    for (let i = 1; i <= maxQNum; i++) {
-      if (!historyData.current.find(c => c.qNum == i)) {
-        historyData.current.push({ qNum: i, text: '', feedback: '' });
+    questions.forEach((q, idx) => {
+      let shortLabel = q.label;
+      if (q.label.includes('.')) {
+        shortLabel = q.label.split('.')[0].trim();
+      } else if (q.label.length > 8) {
+        shortLabel = `문항 ${idx + 1}`;
       }
-    }
+      const qVal = shortLabel.replace('문항 ', '').trim();
+      if (!historyData.current.find(c => String(c.qNum) === String(qVal))) {
+        historyData.current.push({ qNum: qVal, text: '', feedback: '' });
+      }
+    });
     
     // 글로벌에 데이터 홀드
     window.PS_CURRENT_HISTORY = historyData;
     window.PS_ORIGINAL_HISTORY_CURRENT = JSON.parse(JSON.stringify(historyData.current || []));
     
+    // 타학교 미아 데이터 드롭다운 꼬리표 추가
+    historyData.current.forEach(curr => {
+      if (curr.version_label && curr.version_label !== studentSchool) {
+        const exists = Array.from(psSelector.options).some(o => o.value === String(curr.qNum));
+        if (!exists) {
+          const opt = document.createElement('option');
+          opt.value = String(curr.qNum);
+          opt.style.backgroundColor = '#1e293b';
+          opt.style.color = '#f8fafc';
+          opt.textContent = `(구) [${curr.version_label}] 문항 ${curr.qNum}`;
+          opt.dataset.qtext = curr.question || '';
+          psSelector.appendChild(opt);
+        }
+      }
+    });
+    
     // 문항 셀렉트 로드
-    bindPersonalStatementToSelector(1);
+    bindPersonalStatementToSelector(psSelector.options.length > 0 ? psSelector.options[0].value : 1);
     
   } catch (err) {
     console.error('이력 로드 실패:', err);
@@ -1237,7 +1259,12 @@ function bindPersonalStatementToSelector(qNum) {
   
   const schoolMap = window.SCHOOL_QUESTIONS_MAP || [];
   const matchedSchool = schoolMap.find(s => s.name === targetSchool);
-  const qData = matchedSchool && matchedSchool.questions ? matchedSchool.questions[qNum - 1] : null;
+  const qData = matchedSchool && matchedSchool.questions ? matchedSchool.questions.find(q => {
+    let sl = q.label;
+    if (q.label.includes('.')) sl = q.label.split('.')[0].trim();
+    else if (q.label.length > 8) sl = '문항 x'; // dummy for now, fallback logic
+    return sl.replace('문항 ', '').trim() === String(qNum) || q.label === String(qNum);
+  }) : null;
   const details = qData && qData.details ? qData.details : [];
 
   const isLocked = window.ACTIVE_PS_STUDENT_STATUS === '최종제출'; // Need locked status? Actually it's set on modal open, let's just check student.psStatus
@@ -1390,99 +1417,10 @@ function bindPersonalStatementToSelector(qNum) {
     }
   }
   
-  // 버전선택 드롭다운 초기화
-  const verSelector = document.getElementById('ps-version-selector');
-  verSelector.innerHTML = '<option value="current" style="background-color: #1e293b; color: #f8fafc;">⭐ 최신 작성 내용</option>';
-  
-  const historyLogs = hData.history || [];
-  historyLogs.forEach((log, idx) => {
-    if (log.texts) {
-      // 신규 포맷: 전체 문항 스냅샷
-      const opt = document.createElement('option');
-      opt.value = idx;
-      opt.textContent = `${formatTimestamp(log.timestamp)}`;
-      if (log.type === '자소서') verSelector.appendChild(opt);
-    } else if (log.qNum == qNum) {
-      // 구 버전 호환성 (단일 문항)
-      const opt = document.createElement('option');
-      opt.value = idx;
-      opt.textContent = `[구버전] ${formatTimestamp(log.timestamp)}`;
-      if (log.type === '자소서') verSelector.appendChild(opt);
-    }
-  });
+
 }
 
-/**
- * 자소서 버전 롤백 복원
- */
-function rollbackVersion(type, logIdx) {
-  const hData = window.PS_CURRENT_HISTORY;
-  if (!hData) return;
-  
-  const qNum = parseInt(document.getElementById('ps-question-selector').value);
-  const targetSchool = document.getElementById('ps-school-name').textContent.replace('지원 학교: ', '');
 
-  if (logIdx !== 'current') {
-    if (!confirm('선택하신 과거 날짜의 내용으로 되돌리시겠습니까?\n\n🚨 주의: 현재 작성 중이던 내용 중 [저장하기]를 누르지 않은 내용은 유실될 수 있습니다.')) {
-      if (type === '자소서') document.getElementById('ps-version-selector').value = 'current';
-      return;
-    }
-  }
-
-  if (logIdx === 'current') {
-    // 모든 문항을 원본(original)으로 되돌리기
-    const origData = window.PS_ORIGINAL_HISTORY_CURRENT;
-    if (origData) {
-      const maxQNum = hData.current.length > 0 ? Math.max(...hData.current.map(x => x.qNum)) : 4;
-      for (let i = 1; i <= maxQNum; i++) {
-        const o = origData.find(x => x.qNum == i);
-        const c = hData.current.find(x => x.qNum == i);
-        if (c) {
-          if (type === '자소서') c.text = (o ? o.text : '') || '';
-          else c.feedback = (o ? o.feedback : '') || '';
-        }
-      }
-    }
-  } else {
-    const log = hData.history[parseInt(logIdx)];
-    if (!log) return;
-    
-    if (log.texts) {
-      // 신규 포맷: 전체 문항 롤백
-      for (let i = 1; i <= log.texts.length; i++) {
-        const c = hData.current.find(x => x.qNum == i);
-        if (c) {
-          if (type === '자소서') c.text = log.texts[i - 1] || '';
-          else c.feedback = log.texts[i - 1] || '';
-        }
-      }
-      alert('선택하신 과거 이력의 상태로 전체 문항이 복원되었습니다. [저장하기]를 누르면 이 버전으로 최종 복구됩니다.');
-    } else {
-      // 구 버전 포맷: 단일 문항 롤백
-      const c = hData.current.find(x => x.qNum == qNum);
-      if (c) {
-        if (type === '자소서') c.text = log.text || '';
-        else c.feedback = log.text || '';
-      }
-      alert('선택하신 과거 이력의 ' + type + ' 내용으로 현재 문항 화면이 복원되었습니다. [저장하기]를 누르면 이 버전으로 최종 복구됩니다.');
-    }
-  }
-  
-  // 현재 보고 있는 화면(UI) 갱신
-  const currActive = hData.current.find(c => c.qNum == qNum);
-  if (currActive) {
-    if (type === '자소서') {
-      if (window.getCurrentPsText) {
-        bindPersonalStatementToSelector(qNum); // 리렌더링을 위해 바인드 다시 호출 (UI 상태 동기화)
-      } else {
-        document.getElementById('ps-content-textarea').value = currActive.text;
-      }
-      document.getElementById('ps-char-count').textContent = getCharCount(currActive.text, targetSchool);
-    } else {
-      document.getElementById('manual-feedback-textarea').value = currActive.feedback;
-    }
-  }
-}
 
 /**
  * 예상 질문 연습 창 모달 띄우기
@@ -2086,12 +2024,9 @@ function bindEventHandlers() {
   if (closePdfTop) closePdfTop.onclick = closePdfModal;
   if (closePdfBtm) closePdfBtm.onclick = closePdfModal;
   
-  // 자소서 문항 및 버전 드롭다운 연동
+  // 자소서 문항 드롭다운 연동
   document.getElementById('ps-question-selector').onchange = (e) => {
     bindPersonalStatementToSelector(e.target.value);
-  };
-  document.getElementById('ps-version-selector').onchange = (e) => {
-    rollbackVersion('자소서', e.target.value);
   };
   
   // 자소서 모달 내 수기/AI 탭 전환
@@ -2104,7 +2039,7 @@ function bindEventHandlers() {
     document.getElementById('ps-char-count').textContent = getCharCount(e.target.value, targetSchool);
     
     // 로컬 자동 기억 (자소서)
-    const qNum = parseInt(document.getElementById('ps-question-selector').value);
+    const qNum = document.getElementById('ps-question-selector').value;
     const hData = window.PS_CURRENT_HISTORY;
     if (hData && hData.current) {
       const curr = hData.current.find(c => c.qNum == qNum);
@@ -2117,7 +2052,7 @@ function bindEventHandlers() {
 
   document.getElementById('manual-feedback-textarea').oninput = (e) => {
     // 로컬 자동 기억 (피드백)
-    const qNum = parseInt(document.getElementById('ps-question-selector').value);
+    const qNum = document.getElementById('ps-question-selector').value;
     const hData = window.PS_CURRENT_HISTORY;
     if (hData && hData.current) {
       const curr = hData.current.find(c => c.qNum == qNum);
@@ -2137,7 +2072,7 @@ function bindEventHandlers() {
     if (!hData || !hData.current || !origData) return;
 
     // 현재 포커스된 창의 최신 내용도 확실하게 한 번 더 hData에 동기화
-    const qNum = parseInt(document.getElementById('ps-question-selector').value);
+    const qNum = document.getElementById('ps-question-selector').value;
     const currActive = hData.current.find(c => c.qNum == qNum);
     if (currActive) {
       currActive.text = window.getCurrentPsText ? window.getCurrentPsText(false) : document.getElementById('ps-content-textarea').value;
@@ -2442,7 +2377,7 @@ function bindEventHandlers() {
     const matchedSchool = schoolMap.find(s => s.name === (student.targetSchool || ''));
     const totalQuestionsCount = (matchedSchool && matchedSchool.questions) ? matchedSchool.questions.length : 1;
     
-    const currentQNum = parseInt(document.getElementById('ps-question-selector').value || '1');
+    const currentQNum = document.getElementById('ps-question-selector').value || '1';
     const currentTextAreaVal = window.getCurrentPsText ? window.getCurrentPsText(false) : document.getElementById('ps-content-textarea').value;
     
     const hData = window.PS_CURRENT_HISTORY || { current: [] };

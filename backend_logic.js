@@ -87,27 +87,22 @@ async function generateAIChecklist(studentLink, qNum, statementText) {
     // 1. 해당 학생의 지원 학교 및 문항 내용 조회
     let qContent = '';
     let adminReqText = '';
-    const { data: student } = await window.supabaseClient.from('students').select('target_school').eq('student_link', studentLink).single();
-    if (student && student.target_school) {
-      const { data: qRows } = await window.supabaseClient.from('school_questions').select('item_no, content').eq('school_name', student.target_school);
-      if (qRows) {
-        const qRow = qRows.find(r => {
-          const numMatch = (r.item_no || '').match(/\d+/);
-          return (numMatch ? numMatch[0] : r.item_no) == qNum;
-        });
-        if (qRow) qContent = qRow.content || '';
-      }
-      
+    const { data: student } = await window.supabaseClient.from('students').select('*').eq('student_link', studentLink).single();
+    if (student) {
+      const tSchool = student.targetSchool || student.target_school;
       const { data: settingsRow } = await window.supabaseClient.from('settings').select('setting_value').eq('setting_key', 'schools').single();
       if (settingsRow && settingsRow.setting_value) {
         try {
           const schoolsData = JSON.parse(settingsRow.setting_value);
-          const matchedSchool = schoolsData.find(s => s.name === student.target_school);
+          const matchedSchool = schoolsData.find(s => s.name === tSchool);
           if (matchedSchool && matchedSchool.questions) {
-            const qData = matchedSchool.questions[qNum - 1];
-            if (qData && qData.details && qData.details.length > 0) {
-              const titles = qData.details.map((d, idx) => `${idx + 1}. ${d.title}`).join(', ');
-              adminReqText = `학생은 다음의 세부 주제들에 대해 작성해야 한다: ${titles}`;
+            let qRow = matchedSchool.questions.find(q => String(q.label) === String(qNum));
+            if (qRow) {
+              qContent = qRow.content || '';
+              if (qRow.details && qRow.details.length > 0) {
+                const titles = qRow.details.map((d, idx) => `${idx + 1}. ${d.title}`).join(', ');
+                adminReqText = `학생은 다음의 세부 주제들에 대해 작성해야 한다: ${titles}`;
+              }
             }
           }
         } catch (e) {
@@ -180,10 +175,7 @@ async function generateAIFeedback(studentId, qNum, statementText) {
     
     let qContent = '';
     if (targetSchoolData && targetSchoolData.questions) {
-      const qRow = targetSchoolData.questions.find(q => {
-        const numMatch = (q.label || '').match(/\d+/);
-        return (numMatch ? numMatch[0] : q.label) == qNum;
-      });
+      const qRow = targetSchoolData.questions.find(q => String(q.label) === String(qNum));
       if (qRow) qContent = qRow.content || '';
     }
 
@@ -312,7 +304,7 @@ async function generateAIQuestions(studentId, type) {
           
           let formattedContent = row.content;
           if (row.content.includes('[상세분할]') && targetSchoolData && targetSchoolData.questions) {
-            const qData = targetSchoolData.questions[row.question_no - 1];
+            const qData = targetSchoolData.questions.find(q => String(q.label) === String(row.question_no));
             if (qData && qData.details && qData.details.length > 0) {
               const parts = row.content.split('[상세분할]');
               formattedContent = parts.map((part, idx) => {
@@ -1353,24 +1345,26 @@ async function getPersonalStatementHistory(payload) {
 
     const currentStateMap = {};
     
-    // 2. 학교 문항 로드
+    // 2. 학교 문항 로드 (settings 조회)
     let qMap = {};
     if (targetSchool) {
-      const { data: qRows } = await window.supabaseClient.from('school_questions').select('item_no, content').eq('school_name', targetSchool);
-      if (qRows) {
-        qRows.forEach(r => {
-          const numMatch = (r.item_no || '').match(/\d+/);
-          const num = numMatch ? numMatch[0] : r.item_no;
-          qMap[num] = r.content;
-          qMap[r.item_no] = r.content;
-          
-          // 학교 문항 개수만큼 기본 뼈대를 먼저 생성 (DB에 아직 작성 기록이 없어도 저장 가능하도록 보장)
-          if (!currentStateMap[num]) {
-            currentStateMap[num] = {
-              qNum: num, question: r.content, answer: '', text: '', feedback: '', length: 0
-            };
+      const { data: settingsRow } = await window.supabaseClient.from('settings').select('setting_value').eq('setting_key', 'schools').single();
+      if (settingsRow && settingsRow.setting_value) {
+        try {
+          const schoolsData = JSON.parse(settingsRow.setting_value);
+          const matchedSchool = schoolsData.find(s => s.name === targetSchool);
+          if (matchedSchool && matchedSchool.questions) {
+            matchedSchool.questions.forEach(q => {
+              const qVal = String(q.label);
+              qMap[qVal] = q.content || '';
+              if (!currentStateMap[qVal]) {
+                currentStateMap[qVal] = {
+                  qNum: qVal, question: q.content || '', answer: '', text: '', feedback: '', length: 0
+                };
+              }
+            });
           }
-        });
+        } catch (e) {}
       }
     }
     
@@ -1387,7 +1381,7 @@ async function getPersonalStatementHistory(payload) {
       
       if (!currentStateMap[s.question_no]) {
         currentStateMap[s.question_no] = {
-          qNum: s.question_no, question: qText, answer: '', text: '', feedback: '', length: 0
+          qNum: s.question_no, question: qText, answer: '', text: '', feedback: '', length: 0, version_label: s.version_label
         };
       }
       
@@ -1396,6 +1390,7 @@ async function getPersonalStatementHistory(payload) {
         currentStateMap[s.question_no].text = s.content;
         currentStateMap[s.question_no].answer = s.content;
         currentStateMap[s.question_no].length = s.content.length;
+        currentStateMap[s.question_no].version_label = s.version_label;
       }
       if (s.teacher_feedback !== null && s.teacher_feedback !== undefined) {
         currentStateMap[s.question_no].feedback = s.teacher_feedback;
@@ -1455,7 +1450,7 @@ async function savePersonalStatement(payload) {
     const { studentId, contents, writer } = payload;
     const now = new Date().toISOString();
     
-    const { data: student } = await window.supabaseClient.from('students').select('cover_letter_status').eq('student_link', studentId).single();
+    const { data: student } = await window.supabaseClient.from('students').select('cover_letter_status, targetSchool, target_school').eq('student_link', studentId).single();
     if (student && student.cover_letter_status === '작성전') {
       await window.supabaseClient.from('students').update({ cover_letter_status: '작성중' }).eq('student_link', studentId);
     }
@@ -1467,9 +1462,11 @@ async function savePersonalStatement(payload) {
     contents.forEach(c => {
       if (c.type === '자소서') {
         if (!newSnapshots[c.qNum]) {
+          const tSchool = student ? (student.targetSchool || student.target_school || '') : '';
           newSnapshots[c.qNum] = {
             student_link: studentId,
             question_no: c.qNum,
+            version_label: tSchool,
             updated_at: now
           };
         }
@@ -1487,7 +1484,7 @@ async function savePersonalStatement(payload) {
         row.teacher_feedback = feedbackUpdates[qNum];
         delete feedbackUpdates[qNum]; // 업데이트 목록에서 제외
       }
-      const { error: insErr } = await window.supabaseClient.from('personal_statements').insert(row);
+      const { error: insErr } = await window.supabaseClient.from('personal_statements').upsert(row, { onConflict: 'student_link, question_no, version_label' });
       if (insErr) throw insErr;
     }
 
