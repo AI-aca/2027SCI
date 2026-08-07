@@ -645,9 +645,12 @@ function renderMainTable() {
         }
       } 
       else if (col.key === 'psStatus') {
-        const isLocked = val === '최종제출';
-        td.innerHTML = `<span class="badge ${isLocked ? 'success' : 'warning'}">
-                          <i class="fa-solid ${isLocked ? 'fa-lock' : 'fa-lock-open'}"></i> ${val}
+        let badgeClass = 'gray';
+        if (val === '최종제출') badgeClass = 'success';
+        else if (val === '작성중') badgeClass = 'warning';
+        
+        td.innerHTML = `<span class="badge ${badgeClass}">
+                          <i class="fa-solid ${val === '최종제출' ? 'fa-lock' : 'fa-lock-open'}"></i> ${val}
                         </span>`;
       }
       else if (col.key === 'psViewer') {
