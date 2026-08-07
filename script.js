@@ -757,7 +757,7 @@ function renderMainTable() {
       }
       else if (col.key === 'name') {
         if (val) {
-          td.innerHTML = `<span style="background-color: rgba(0, 168, 134, 0.15); padding: 4px 12px; border-radius: 6px; font-weight: 800; border: 1px solid var(--color-primary); color: var(--text-highlight); display: inline-block; letter-spacing: 0.5px; box-shadow: 0 0 8px rgba(0, 168, 134, 0.2);">${val}</span>`;
+          td.innerHTML = `<span style="background-color: rgba(255, 255, 255, 0.12); padding: 4px 10px; border-radius: 4px; font-weight: 600; color: var(--text-main); display: inline-block;">${val}</span>`;
         } else {
           td.innerHTML = '<strong>-</strong>';
         }

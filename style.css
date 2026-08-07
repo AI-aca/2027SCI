@@ -371,7 +371,9 @@ select option {
   background: var(--bg-card);
   backdrop-filter: var(--glass-blur);
   box-shadow: var(--box-shadow);
-  margin-bottom: 24px;
+  margin-bottom: 0;
+  flex-grow: 1;
+  min-height: 0;
 }
 
 table.main-data-table {
