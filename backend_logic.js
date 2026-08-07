@@ -183,12 +183,12 @@ async function generateAIFeedback(studentId, qNum, statementText) {
     const { data: fbPromptData } = await window.supabaseClient.from('settings').select('setting_value').eq('setting_key', 'prompt_feedback').single();
     let baseSystemPrompt = fbPromptData ? fbPromptData.setting_value : "당신은 최고 수준의 입시 컨설턴트입니다.";
     
-    const formatConstraint = `
-\n\n🚨[출력 서식 및 어투 강제 규칙 - 반드시 지킬 것]
-이 출력은 학생의 자기소개서 [문항 ${qNum}]에 대한 피드백입니다.
+    const cleanQNum = String(qNum).replace(/^문항\s*/, '');
+    const formatConstraint = `\n\n🚨[출력 서식 및 어투 강제 규칙 - 반드시 지킬 것]
+이 출력은 학생의 자기소개서 [문항 ${cleanQNum}]에 대한 피드백입니다.
 당신에게 부여된 기존의 프롬프트 지시사항(평가 기준 등)을 모두 따르되, **최종 출력물의 형태는 반드시 아래의 4가지 항목으로만 구성된 마크다운(Markdown) 형식**이어야 합니다. (기존의 '종합 총평' 등 다른 임의의 항목은 절대 생성하지 마세요)
 
-### [문항 ${qNum}]
+### [문항 ${cleanQNum}]
 #### 💡 돋보이는 강점
 - (강점 분석 내용 1)
 - (강점 분석 내용 2)
@@ -202,11 +202,12 @@ async function generateAIFeedback(studentId, qNum, statementText) {
 - (수정 가이드 2)
 
 #### 📝 문항 총평
-(위의 3가지 항목과 달리 불릿 기호(-) 없이, 1개의 문단으로 길고 구체적으로 서술하세요.)
+(위의 3가지 항목과 달리 불릿 기호(-) 없이, 1개의 문단으로 서술하되, 절대 200자를 초과하지 않도록 엄격히 제한합니다.)
 
 🚨[제약 사항]
 1. 불릿 포인트(-)를 사용하는 항목(강점, 단점, 수정제안)은 **반드시 항목당 최대 2개의 문장(불릿)까지만** 출력하세요. 절대 3개 이상 출력하지 마세요.
 2. 경어체(~습니다)를 절대 사용하지 마세요. 문장을 짧고 간결하게 끊고, 반드시 **명사형 종결(~음, ~함, ~필요, ~누락 등) 어투(음슴체)**를 모든 문장에 엄격하게 적용하세요.
+3. '치명적 단점' 항목에는 칭찬이나 장점을 절대 섞어 쓰지 마세요. 만약 학생의 글에 치명적인 단점이 없다면 억지로 만들지 말고 반드시 '치명적인 단점은 없습니다.'라는 단 한 문장만 출력하세요.
 `;
     const systemPrompt = baseSystemPrompt + formatConstraint;
     
@@ -240,21 +241,14 @@ async function generateAIFeedback(studentId, qNum, statementText) {
     }
     
     const targetType = '문항' + qNum + '_도움받기';
-    const { data: existingFb } = await window.supabaseClient.from('ai_feedback_history').select('id').eq('student_link', studentId).eq('type', targetType).maybeSingle();
+    await window.supabaseClient.from('ai_feedback_history').delete().eq('student_link', studentId).eq('type', targetType);
     const fbPayload = {
       student_link: studentId,
       type: targetType,
       feedback: safeFeedback,
       created_at: new Date().toISOString()
     };
-    let fbErr;
-    if (existingFb && existingFb.id) {
-      const res = await window.supabaseClient.from('ai_feedback_history').update(fbPayload).eq('id', existingFb.id);
-      fbErr = res.error;
-    } else {
-      const res = await window.supabaseClient.from('ai_feedback_history').insert(fbPayload);
-      fbErr = res.error;
-    }
+    const { error: fbErr } = await window.supabaseClient.from('ai_feedback_history').insert(fbPayload);
     if (fbErr) throw new Error('ai_feedback_history DB 저장 실패: ' + fbErr.message);
     
     const timeStr = new Date().toISOString(); 

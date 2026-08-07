@@ -187,7 +187,7 @@ function formatTimestamp(ts) {
 // 간단한 마크다운 파싱 헬퍼 함수
 function parseMarkdown(text) {
   if (!text) return '';
-  let html = text.replace(/</g, '&lt;').replace(/>/g, '&gt;'); // XSS 방지
+  let html = text.replace(/^\s+/, '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); // XSS 방지
   html = html.replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--color-primary-light); font-weight:700;">$1</strong>'); // Bold
   html = html.replace(/^#### (.*)$/gim, '<h4 style="margin-top:20px; margin-bottom:8px; color:var(--color-primary); font-size:15px;">$1</h4>'); // H4
   html = html.replace(/^### (.*)$/gim, '<h3 style="margin-top:24px; margin-bottom:12px; color:var(--color-primary); font-size:17px; padding-top:12px;">$1</h3>'); // H3 (항목 선 완전히 제거)
@@ -195,7 +195,7 @@ function parseMarkdown(text) {
   html = html.replace(/^# (.*)$/gim, '<h3 style="margin-top:24px; margin-bottom:12px; color:var(--color-primary); font-size:17px; padding-top:12px;">$1</h3>'); // H1 (예외처리)
   html = html.replace(/^[#\s]*===\s*(문항\s*\d+).*?===$/gim, '<h3 style="margin-top:36px; margin-bottom:12px; color:var(--color-primary); font-size:17px; border-top:1px solid rgba(255,255,255,0.2); padding-top:16px;">[$1]</h3>'); // === 문항 N === (AI 변칙 문자 포용)
   html = html.replace(/^\s*---\s*$/gim, ''); // 구분선(---) 제거
-  html = html.replace(/^\* (.*)$/gim, '<div style="padding-left:16px; position:relative; margin-bottom:4px;"><span style="position:absolute; left:0; color:var(--color-primary);">•</span>$1</div>'); // List
+  html = html.replace(/^[\*\-]\s+(.*)$/gim, '<div style="padding-left:16px; position:relative; margin-bottom:12px;"><span style="position:absolute; left:0; color:var(--color-primary);">•</span>$1</div>'); // List
   html = html.replace(/^> (.*)$/gim, '<div style="border-left: 3px solid var(--color-primary); margin: 12px 0; color: #bbb; background: rgba(0,0,0,0.15); padding: 10px 12px; border-radius: 4px;">$1</div>'); // Quote
   
   // 제목(h3, h4) 주변의 중복된 엔터(줄바꿈) 제거 (마진과 중첩되어 간격이 넓어지는 현상 방지)
@@ -1633,6 +1633,7 @@ async function runAIFeedbackAction() {
   }
   
   const qNum = document.getElementById('ps-question-selector').value;
+  if (!confirm('현재 문항(문항' + qNum + '번)에 대한 AI 도움받기를 생성하시겠습니까?')) return;
   const statementText = window.getCurrentPsText ? window.getCurrentPsText(true) : document.getElementById('ps-content-textarea').value;
   
   if (!statementText || statementText.trim().length < 10) {
@@ -1645,7 +1646,11 @@ async function runAIFeedbackAction() {
   
   // AI 피드백 생성 전, 학생이 작성 중이던 자소서 내용을 수파베이스에 안전하게 즉시 일괄 저장 (체크리스트와 동일 로직)
   const btnSave = document.getElementById('btn-save-ps');
-  if (btnSave) btnSave.click();
+  if (btnSave) {
+    window._isSilentSave = true;
+    btnSave.click();
+    setTimeout(() => { window._isSilentSave = false; }, 100);
+  }
   
   try {
     const res = await ApiClient.post('generateAIFeedback', { 
@@ -2193,7 +2198,9 @@ function bindEventHandlers() {
     });
     
     if (contents.length === 0) {
-      alert('변경된 내용이 없습니다. 저장할 필요가 없습니다. (Dirty Check 통과)');
+      if (!window._isSilentSave) {
+        alert('변경된 내용이 없습니다. 저장할 필요가 없습니다. (Dirty Check 통과)');
+      }
       return;
     }
     
