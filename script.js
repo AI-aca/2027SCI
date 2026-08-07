@@ -3704,7 +3704,18 @@ window.openPsViewerModal = async function(studentLink) {
         if (c.text) {
           if (c.text.includes('[상세분할]')) {
             const parts = c.text.split('[상세분할]');
-            renderedText = parts.map((p, idx) => `<div style="margin-bottom: 12px; padding: 12px; border-radius: 6px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);"><strong style="color: var(--color-primary); font-size: 13px; display: block; margin-bottom: 6px;">[파트 ${idx+1}]</strong>${p.trim()}</div>`).join('');
+            renderedText = parts.map((p, idx) => {
+              // 목표 2: 빈 텍스트 버그 방지 및 기본 내용 없음 처리
+              const partText = p.trim();
+              const partContent = partText ? partText : '<span class="text-muted">내용 없음</span>';
+              
+              // 목표 1: qData 객체의 details 정보를 활용한 동적 제목 바인딩
+              const partTitle = (qData && qData.details && qData.details[idx] && qData.details[idx].title) 
+                ? qData.details[idx].title 
+                : `세부항목 ${idx + 1}`;
+                
+              return `<div style="margin-bottom: 12px; padding: 12px; border-radius: 6px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);"><strong style="color: var(--color-primary); font-size: 13px; display: block; margin-bottom: 6px;">[${partTitle}]</strong>${partContent}</div>`;
+            }).join('');
           } else {
             renderedText = c.text;
           }
