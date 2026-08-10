@@ -1061,6 +1061,7 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual', ta
       const exists = Array.from(psSelector.options).some(o => o.value === String(targetQNum));
       if (exists) defaultQNum = targetQNum;
     }
+    psSelector.value = defaultQNum;
     bindPersonalStatementToSelector(defaultQNum);
     
   } catch (err) {
