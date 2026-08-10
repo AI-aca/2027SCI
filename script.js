@@ -1047,7 +1047,8 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual') {
           opt.value = String(curr.qNum);
           opt.style.backgroundColor = '#1e293b';
           opt.style.color = '#f8fafc';
-          opt.textContent = `(구) [${curr.version_label}] 문항 ${curr.qNum}`;
+          let displayQNum = String(curr.qNum).startsWith('문항') ? String(curr.qNum) : `문항 ${curr.qNum}`;
+          opt.textContent = `(구) [${curr.version_label}] ${displayQNum}`;
           opt.dataset.qtext = curr.question || '';
           psSelector.appendChild(opt);
         }
