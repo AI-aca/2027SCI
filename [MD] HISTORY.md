@@ -1,3 +1,5 @@
+
+- **2026-08-10**: (프론트엔드) 과거 버그로 수파베이스 DB에 생성된 쓰레기 데이터(version_label: '최신', qNum: 1 등)가 렌더링되거나 재저장되는 현상 차단. AI 도움받기(runAIFeedbackAction) 시 Race Condition으로 인한 탭 전환 증발 버그 픽스(openPersonalStatementModal(ai) 강제 재호출 방식 적용). 한글 인코딩 무결성 검증 완료.
 ### 📝 업데이트 내역 (업데이트 로그)
 
 ### [143차 업데이트] 2026-08-07
