@@ -1031,6 +1031,9 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual') {
       }
     });
     
+    // 쓰레기 데이터 원천 필터링 (과거 버그로 생성된 1, 2, '최신' 등 껍데기 유령 데이터 차단)
+    historyData.current = historyData.current.filter(c => !(c.version_label === '최신' || !isNaN(c.qNum)));
+    
     // 글로벌에 데이터 홀드
     window.PS_CURRENT_HISTORY = historyData;
     window.PS_ORIGINAL_HISTORY_CURRENT = JSON.parse(JSON.stringify(historyData.current || []));
@@ -1051,8 +1054,8 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual') {
       }
     });
     
-    // 문항 셀렉트 로드
-    bindPersonalStatementToSelector(psSelector.options.length > 0 ? psSelector.options[0].value : 1);
+    // 문항 셀렉트 로드 (기본값을 1이 아닌 문항1-1 등 유효 템플릿 값으로 보호)
+    bindPersonalStatementToSelector(psSelector.options.length > 0 ? psSelector.options[0].value : '문항1-1');
     
   } catch (err) {
     console.error('이력 로드 실패:', err);
@@ -1679,13 +1682,10 @@ async function runAIFeedbackAction() {
     if (res.success) {
       container.innerHTML = parseMarkdown(res.feedback);
       alert('AI 피드백 생성이 성공적으로 완료되었습니다!');
-      if (window.PS_CURRENT_HISTORY) {
-        if (!window.PS_CURRENT_HISTORY.aiHistory) window.PS_CURRENT_HISTORY.aiHistory = [];
-        window.PS_CURRENT_HISTORY.aiHistory.push({
-          type: '문항' + qNum + '_도움받기',
-          feedback: res.feedback,
-          timestamp: new Date().toISOString()
-        });
+      // 레이스 컨디션(저장과 생성이 겹쳐 메모리가 꼬이는 현상) 방지
+      // 생성이 완료되고 서버 DB에 정상 기록된 즉시 최신 상태를 DB로부터 통째로 다시 긁어오며 AI 탭을 유지합니다.
+      if (typeof openPersonalStatementModal === 'function') {
+        openPersonalStatementModal(ACTIVE_PS_STUDENT, 'ai');
       }
     } else {
       throw new Error(res.error);
