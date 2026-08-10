@@ -2220,13 +2220,6 @@ function bindEventHandlers() {
       }
     });
     
-    if (contents.length === 0) {
-      if (!window._isSilentSave) {
-        alert('변경된 내용이 없습니다. 저장할 필요가 없습니다. (Dirty Check 통과)');
-      }
-      return;
-    }
-    
     let totalTextLength = 0;
     hData.current.forEach(curr => {
       if (curr.text) {
@@ -2234,6 +2227,17 @@ function bindEventHandlers() {
       }
     });
     const isAllEmpty = (totalTextLength === 0);
+    
+    const student = STUDENTS_LIST.find(s => String(s.studentLink) === String(ACTIVE_PS_STUDENT));
+    const currentStatus = student ? student.cover_letter_status : '';
+    const isStatusMismatch = (isAllEmpty && currentStatus !== '작성전') || (!isAllEmpty && currentStatus === '작성전');
+
+    if (contents.length === 0 && !isStatusMismatch) {
+      if (!window._isSilentSave) {
+        alert('변경된 내용이 없습니다. 저장할 필요가 없습니다. (Dirty Check 통과)');
+      }
+      return;
+    }
 
     const writerName = CURRENT_ROLE === '학생' ? '학생' : '선생님';
     
