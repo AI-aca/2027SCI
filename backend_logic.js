@@ -1451,12 +1451,16 @@ async function getPersonalStatementHistory(payload) {
 
 async function savePersonalStatement(payload) {
   try {
-    const { studentId, contents, writer } = payload;
+    const { studentId, contents, writer, isAllEmpty } = payload;
     const now = new Date().toISOString();
     
     const { data: student } = await window.supabaseClient.from('students').select('cover_letter_status, target_school').eq('student_link', studentId).single();
-    if (student && student.cover_letter_status === '작성전') {
-      await window.supabaseClient.from('students').update({ cover_letter_status: '작성중' }).eq('student_link', studentId);
+    if (student) {
+      if (isAllEmpty && student.cover_letter_status !== '작성전') {
+        await window.supabaseClient.from('students').update({ cover_letter_status: '작성전' }).eq('student_link', studentId);
+      } else if (!isAllEmpty && student.cover_letter_status === '작성전') {
+        await window.supabaseClient.from('students').update({ cover_letter_status: '작성중' }).eq('student_link', studentId);
+      }
     }
 
     // 변경된 항목을 자소서와 피드백으로 분리

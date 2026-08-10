@@ -1679,8 +1679,13 @@ async function runAIFeedbackAction() {
     if (res.success) {
       container.innerHTML = parseMarkdown(res.feedback);
       alert('AI 피드백 생성이 성공적으로 완료되었습니다!');
-      if (typeof loadPersonalStatementData === 'function') {
-        loadPersonalStatementData(ACTIVE_PS_STUDENT);
+      if (window.PS_CURRENT_HISTORY) {
+        if (!window.PS_CURRENT_HISTORY.aiHistory) window.PS_CURRENT_HISTORY.aiHistory = [];
+        window.PS_CURRENT_HISTORY.aiHistory.push({
+          type: '문항' + qNum + '_도움받기',
+          feedback: res.feedback,
+          timestamp: new Date().toISOString()
+        });
       }
     } else {
       throw new Error(res.error);
@@ -2222,13 +2227,22 @@ function bindEventHandlers() {
       return;
     }
     
+    let totalTextLength = 0;
+    hData.current.forEach(curr => {
+      if (curr.text) {
+        totalTextLength += curr.text.replace(/\s+/g, '').length;
+      }
+    });
+    const isAllEmpty = (totalTextLength === 0);
+
     const writerName = CURRENT_ROLE === '학생' ? '학생' : '선생님';
     
     try {
       const res = await ApiClient.post('savePersonalStatement', {
         studentId: ACTIVE_PS_STUDENT,
         contents: contents,
-        writer: writerName
+        writer: writerName,
+        isAllEmpty: isAllEmpty
       });
       if (!res.success) throw new Error(res.error || '알 수 없는 서버 에러');
       
