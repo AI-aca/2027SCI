@@ -1655,7 +1655,8 @@ async function runAIFeedbackAction() {
   }
   
   const qNum = document.getElementById('ps-question-selector').value;
-  if (!confirm('현재 문항(문항' + qNum + '번)에 대한 AI 도움받기를 생성하시겠습니까?')) return;
+  const displayQNum = String(qNum).startsWith('문항') ? String(qNum) : '문항' + qNum;
+  if (!confirm(`현재 문항(${displayQNum}번)에 대한 AI 도움받기를 생성하시겠습니까?`)) return;
   const statementText = window.getCurrentPsText ? window.getCurrentPsText(true) : document.getElementById('ps-content-textarea').value;
   
   if (!statementText || statementText.trim().length < 10) {
