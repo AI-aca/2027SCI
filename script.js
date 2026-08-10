@@ -857,7 +857,7 @@ function toggleScoreAccordion(studentLink, totalScore) {
  * 자소서 편집 모달 창 띄우기
  */
 let ACTIVE_PS_STUDENT = null;
-async function openPersonalStatementModal(studentLink, initialTab = 'manual') {
+async function openPersonalStatementModal(studentLink, initialTab = 'manual', targetQNum = null) {
   isPsDirty = false; // 창 열 때 센서 초기화
   ACTIVE_PS_STUDENT = studentLink;
   
@@ -1055,8 +1055,13 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual') {
       }
     });
     
-    // 문항 셀렉트 로드 (기본값을 1이 아닌 문항1-1 등 유효 템플릿 값으로 보호)
-    bindPersonalStatementToSelector(psSelector.options.length > 0 ? psSelector.options[0].value : '문항1-1');
+    // 문항 셀렉트 로드 (보고 있던 문항 번호가 있으면 우선 복구)
+    let defaultQNum = psSelector.options.length > 0 ? psSelector.options[0].value : '문항1-1';
+    if (targetQNum) {
+      const exists = Array.from(psSelector.options).some(o => o.value === String(targetQNum));
+      if (exists) defaultQNum = targetQNum;
+    }
+    bindPersonalStatementToSelector(defaultQNum);
     
   } catch (err) {
     console.error('이력 로드 실패:', err);
@@ -2327,8 +2332,8 @@ function bindEventHandlers() {
       if (res.success) {
          document.getElementById('ai-checklist-container').innerHTML = '<div style="color: var(--text-muted); text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; line-height: 1.6; word-break: keep-all; padding: 10px;">🚫 기재하면 절대 안되는 사항이나<br>질문의 핵심요점과 어울리지 않는지 등을 체크합니다.<br><br>📝 적어도 자소서 초안이 입력되어야만,<br>선생님들이 확인하여 작성할 수 있습니다.</div>';
          alert('초기화되었습니다.');
-         if (typeof loadPersonalStatementData === 'function') {
-           loadPersonalStatementData(ACTIVE_PS_STUDENT);
+         if (typeof openPersonalStatementModal === 'function') {
+           openPersonalStatementModal(ACTIVE_PS_STUDENT, 'manual', qNum);
          }
       } else {
          alert('초기화 실패: ' + res.error);
@@ -2347,8 +2352,8 @@ function bindEventHandlers() {
       if (res.success) {
          document.getElementById('ai-feedback-container').innerHTML = '<div style="color: var(--text-muted); padding: 20px; text-align: center;">[AI 피드백 로드 대기 중...]</div>';
          alert('초기화되었습니다.');
-         if (typeof loadPersonalStatementData === 'function') {
-           loadPersonalStatementData(ACTIVE_PS_STUDENT);
+         if (typeof openPersonalStatementModal === 'function') {
+           openPersonalStatementModal(ACTIVE_PS_STUDENT, 'ai', qNum);
          }
       } else {
          alert('초기화 실패: ' + res.error);
