@@ -1693,7 +1693,7 @@ async function runAIFeedbackAction() {
       // 레이스 컨디션(저장과 생성이 겹쳐 메모리가 꼬이는 현상) 방지
       // 생성이 완료되고 서버 DB에 정상 기록된 즉시 최신 상태를 DB로부터 통째로 다시 긁어오며 AI 탭을 유지합니다.
       if (typeof openPersonalStatementModal === 'function') {
-        openPersonalStatementModal(ACTIVE_PS_STUDENT, 'ai');
+        openPersonalStatementModal(ACTIVE_PS_STUDENT, 'ai', qNum);
       }
     } else {
       throw new Error(res.error);
