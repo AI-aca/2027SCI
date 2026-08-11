@@ -3145,7 +3145,8 @@ function renderUserGuideContent() {
             <ul style="list-style: none; padding: 0; margin: 0; margin-left: 5px;">
               <li style="margin-bottom: 8px; font-size: 14px;">① <strong>[자기소개서]</strong> 탭에서 첨삭할 학생 우측의 <code>[<i class="fa-solid fa-pen"></i> 자소서 첨삭]</code>(녹색 버튼)을 클릭합니다.</li>
               <li style="margin-bottom: 8px; font-size: 14px;">② 우측 화면 상단의 <strong>'문항별 피드백'</strong> 탭이 선택되어 있는지 확인합니다.</li>
-              <li style="font-size: 14px;">③ 지도 의견을 작성하고 화면 하단의 <code>[피드백 저장]</code> 버튼을 누르면 학생에게 즉시 연동됩니다. 또한 AI도움받기를 통해 <strong>&lt;각 문항별 피드백 도움&gt;</strong>을 받을 수 있습니다!</li>
+              <li style="margin-bottom: 8px; font-size: 14px;">③ 지도 의견을 작성하고 화면 하단의 <code>[피드백 저장]</code> 버튼을 누르면 학생에게 즉시 연동됩니다. 또한 AI도움받기를 통해 <strong>&lt;각 문항별 피드백 도움&gt;</strong>을 받을 수 있습니다!</li>
+              <li style="font-size: 14px; color: #3b82f6;">④ 문항별 체크리스트 확인을 통해 자소서 각 문항별 결격 사유 등의 주요 포인트를 확인할 수 있습니다. 자소서가 어느정도 완성된 학생은 상시로 체크리스트 확인해 주세요. 이 체크리스트는 학생에게 즉시 연동됩니다.</li>
             </ul>
           </div>
 
@@ -3178,7 +3179,8 @@ function renderUserGuideContent() {
             <h5 style="color: #fff; font-size: 15px; margin-bottom: 10px;"><i class="fa-solid fa-bolt" style="color: var(--color-danger); margin-right: 8px;"></i> 2. 학생 일괄 AI 자동화 처리</h5>
             <ul style="list-style: none; padding: 0; margin: 0; margin-left: 5px;">
               <li style="margin-bottom: 10px; font-size: 14px;"><strong>자소서 일괄 첨삭:</strong> 자소서 탭 상단의 <code>[일괄 AI 피드백 생성]</code> 버튼을 통해 선택된 다수의 학생 자소서를 Gemini API가 일괄 자동 첨삭합니다.</li>
-              <li style="font-size: 14px;"><strong>면접 일괄 생성:</strong> 면접 탭 상단의 <code>[일괄 AI 예상질문 생성]</code> 버튼을 통해 여러 학생의 자소서 기반 예상질문을 한 번에 추출합니다.</li>
+              <li style="margin-bottom: 10px; font-size: 14px;"><strong>면접 일괄 생성:</strong> 면접 탭 상단의 <code>[일괄 AI 예상질문 생성]</code> 버튼을 통해 여러 학생의 자소서 기반 예상질문을 한 번에 추출합니다.</li>
+              <li style="font-size: 14px; color: #3b82f6;"><strong>자소서 체크리스트 지도:</strong> 문항별 체크리스트 확인을 통해 자소서 각 문항별 결격 사유 등의 주요 포인트를 확인할 수 있습니다. 자소서가 어느정도 완성된 학생은 상시로 체크리스트 확인해 주세요. 이 체크리스트는 학생에게 즉시 연동됩니다.</li>
             </ul>
           </div>
 
