@@ -2533,7 +2533,7 @@ function bindEventHandlers() {
     let unwrittenQuestionNum = -1;
     for (let i = 1; i <= totalQuestionsCount; i++) {
       let qText = '';
-      if (i === currentQNum) {
+      if (String(i) === String(currentQNum)) {
         qText = currentTextAreaVal; // 현재 편집 중인 내용은 텍스트에리어 우선 참조
       } else {
         const savedData = hData.current.find(c => c.qNum == i);
