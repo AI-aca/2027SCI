@@ -648,8 +648,10 @@ function renderMainTable() {
         if (CURRENT_ROLE === '관리자') {
           if (student.recordPdf) {
             const btnText = student.recordScore ? '재채점' : 'AI 채점';
+            const parseBtnText = student.isParsed ? '재파싱' : 'AI 파싱';
+            const parseBtnIcon = student.isParsed ? 'fa-arrows-rotate' : 'fa-play';
             td.innerHTML = `<button class="btn-action" style="padding: 2px 6px; font-size: 14px; background-color: var(--color-primary); display: inline-flex;" onclick="runSingleAIEval('${student.studentLink}')"><i class="fa-solid fa-robot"></i> ${btnText}</button>
-                            <button class="btn-action" style="padding: 2px 6px; font-size: 14px; margin-left: 6px; background-color: var(--color-danger); display: inline-flex;" onclick="reparseRecord('${student.studentLink}')"><i class="fa-solid fa-arrows-rotate"></i> 재파싱</button>`;
+                            <button class="btn-action" style="padding: 2px 6px; font-size: 14px; margin-left: 6px; background-color: var(--color-danger); display: inline-flex;" onclick="reparseRecord('${student.studentLink}')"><i class="fa-solid ${parseBtnIcon}"></i> ${parseBtnText}</button>`;
           } else {
             td.innerHTML = `<span class="text-muted">파일없음</span>`;
           }

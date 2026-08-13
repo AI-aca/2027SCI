@@ -1256,6 +1256,12 @@ async function getStudentsList() {
       } catch (e) {
         console.warn('Storage file list fetch error:', e);
       }
+      // 📝 파싱 이력 유무 교차 검증 (프론트엔드 버튼 동적 렌더링용)
+      const { data: parsedRecords } = await window.supabaseClient.from('parsed_records').select('student_link');
+      const parsedSet = new Set();
+      if (parsedRecords) {
+        parsedRecords.forEach(p => parsedSet.add(p.student_link));
+      }
       
       return students.map(s => {
         let validRecordPdf = '';
@@ -1298,6 +1304,7 @@ async function getStudentsList() {
           psFeedback: s.cover_letter_feedback_ai || '',
           questions: s.expected_questions_ai || '',
           studentAnswers: practiceMap[s.student_link || s.id] || '',
+          isParsed: parsedSet.has(s.student_link || s.id),
           passRound1: s.result_1st || '대기',
           passRound2: s.result_2nd || '대기',
           passFinal: s.result_final || '대기',
