@@ -477,7 +477,7 @@ async function evaluateStudentRecord(studentId, recordText) {
       { id: 3, prompt: PROMPT_AREA_3 }
     ];
     let finalParsedData = {};
-      const models = ['gemini-3.1-pro-preview', 'gemini-3.6-flash'];
+      const models = ['gemini-3.1-pro-preview', 'gemini-3.1-pro-preview'];
     let pendingAreas = [...areas];
     let lastError = null;
     const studentUserPrompt = "[학생명]: " + student.name + "\n[생기부 파싱 텍스트]:\n" + textToAnalyze;
@@ -501,9 +501,11 @@ async function evaluateStudentRecord(studentId, recordText) {
       const responses = await Promise.allSettled(reqPromises);
       let nextPending = [];
 
-      for (let r of responses) {
+      for (let i = 0; i < responses.length; i++) {
+        const r = responses[i];
+        const area = pendingAreas[i];
         if (r.status === 'fulfilled') {
-          const { res, data, area } = r.value;
+          const { res, data } = r.value;
           let success = false;
           if (res.ok && data.candidates && data.candidates[0].content.parts[0].text) {
              try {
@@ -518,7 +520,7 @@ async function evaluateStudentRecord(studentId, recordText) {
           }
           if (!success) nextPending.push(area);
         } else {
-          nextPending.push(r.reason.area || pendingAreas[0]);
+          nextPending.push(area);
           lastError = new Error('Fetch failed: ' + r.reason.message);
         }
       }
