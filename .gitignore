@@ -4,3 +4,6 @@ scratch/
 Code.gs
 .gemini/
 .env
+
+*.md
+*.csv
