@@ -744,7 +744,7 @@ async function extractTextFromPdf(fileUrl) {
               { inlineData: { mimeType: "application/pdf", data: base64Data } }
             ]
           }],
-          generationConfig: { temperature: 0 }
+          generationConfig: { temperature: 0, maxOutputTokens: 65536 }
         })
       });
       
