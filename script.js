@@ -527,7 +527,7 @@ function renderMainTable() {
     const th = document.createElement('th');
     th.style.textAlign = 'center';
     
-    if (['center', 'name', 'school', 'targetSchool'].includes(col.key)) {
+    if (['center', 'name', 'school', 'targetSchool', 'psStatus', 'recordScoreOnly'].includes(col.key)) {
       th.style.cursor = 'pointer';
       
       // 기본 상태는 회색 아래쪽 삼각형
@@ -573,8 +573,15 @@ function renderMainTable() {
   // 선택된 컬럼 정렬 적용
   if (currentSortCol) {
     filtered.sort((a, b) => {
-      let valA = a[currentSortCol] || '';
-      let valB = b[currentSortCol] || '';
+      let key = currentSortCol === 'recordScoreOnly' ? 'recordScore' : currentSortCol;
+      let valA = a[key] || '';
+      let valB = b[key] || '';
+      
+      if (key === 'recordScore') {
+        valA = parseFloat(valA) || 0;
+        valB = parseFloat(valB) || 0;
+      }
+      
       if (valA < valB) return currentSortDir === 'asc' ? -1 : 1;
       if (valA > valB) return currentSortDir === 'asc' ? 1 : -1;
       return 0;
