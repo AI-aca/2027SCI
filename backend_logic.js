@@ -1351,11 +1351,25 @@ async function getPersonalStatementHistory(payload) {
     
     // 2. 학교 문항 로드 (settings 조회)
     let qMap = {};
-    if (targetSchool) {
-      const { data: settingsRow } = await window.supabaseClient.from('settings').select('setting_value').eq('setting_key', 'schools').single();
-      if (settingsRow && settingsRow.setting_value) {
-        try {
-          const schoolsData = JSON.parse(settingsRow.setting_value);
+    let allSchoolsQMap = {}; // 전체 학교 문항 저장용
+    
+    const { data: settingsRow } = await window.supabaseClient.from('settings').select('setting_value').eq('setting_key', 'schools').single();
+    if (settingsRow && settingsRow.setting_value) {
+      try {
+        const schoolsData = JSON.parse(settingsRow.setting_value);
+        
+        // 전체 학교의 문항 데이터를 allSchoolsQMap에 저장
+        schoolsData.forEach(school => {
+          allSchoolsQMap[school.name] = {};
+          if (school.questions) {
+            school.questions.forEach(q => {
+              allSchoolsQMap[school.name][String(q.label)] = q.content || '';
+            });
+          }
+        });
+
+        // 기존 현재 학교(targetSchool) qMap 및 currentStateMap 초기화 로직 유지
+        if (targetSchool) {
           const matchedSchool = schoolsData.find(s => s.name === targetSchool);
           if (matchedSchool && matchedSchool.questions) {
             matchedSchool.questions.forEach(q => {
@@ -1368,8 +1382,8 @@ async function getPersonalStatementHistory(payload) {
               }
             });
           }
-        } catch (e) {}
-      }
+        }
+      } catch (e) {}
     }
     
     // 3. 자소서 내용 모두 로드 (시간순 정렬)
@@ -1381,7 +1395,14 @@ async function getPersonalStatementHistory(payload) {
 
     (statements || []).forEach(s => {
       const qNumStr = String(s.question_no);
-      const qText = qMap[qNumStr] || qMap['문항' + qNumStr] || '';
+      
+      let qText = '';
+      if (s.version_label && allSchoolsQMap[s.version_label]) {
+        qText = allSchoolsQMap[s.version_label][qNumStr] || allSchoolsQMap[s.version_label]['문항' + qNumStr] || '';
+      }
+      if (!qText) {
+        qText = qMap[qNumStr] || qMap['문항' + qNumStr] || '';
+      }
       
       if (!currentStateMap[s.question_no]) {
         currentStateMap[s.question_no] = {
