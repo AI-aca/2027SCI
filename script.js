@@ -175,6 +175,7 @@ function parseMarkdownToHtml(text) {
     .replace(/\s*\[종합 총평\]\s*/g, '<br><br>');
     
   html = html.replace(/\n/g, '<br>');
+  html = html.replace(/(<br>)+(<hr[^>]*>)/gi, '$2'); // 가로줄 앞의 잉여 빈줄(br) 싹둑 자르기
   html = html.replace(/(<\/h2>|<\/h3>|<\/h4>|<hr[^>]*>|<\/div>|<\/li>)<br>*/g, '$1');
   html = html.replace(/^(<br>)+/, ''); // 맨 앞 공백 치우기
   return html;
@@ -2918,7 +2919,7 @@ async function openScoreDetailsModal(studentLink) {
             cleanReport = cleanReport.replace(/\*\*🔥 종합 생기부 평가 점수\*\*:.*만점/g, '**🔥 종합 생기부 평가 점수**: ' + finalScoreMath + ' 점 / 400점 만점');
 
       // 프론트엔드 UI에서는 ADMIN_ONLY 마크다운 텍스트 블록 전체를 무조건 날려버림 (아래 예쁜 그리드 UI 카드로 대체되므로 중복 표시 방지)
-      cleanReport = cleanReport.replace(/<!-- ADMIN_ONLY_START -->[\s\S]*?<!-- ADMIN_ONLY_END -->/g, '');
+      cleanReport = cleanReport.replace(/\n*<!-- ADMIN_ONLY_START -->[\s\S]*?<!-- ADMIN_ONLY_END -->\n*(?=-{3})/g, '\n');
 
       document.getElementById('score-details-report-text').innerHTML = `
         <strong style="display: block; margin-bottom: 8px; color: var(--color-primary);"><i class="fa-solid fa-robot"></i> AI 종합 평가 리포트</strong>
