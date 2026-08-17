@@ -31,7 +31,13 @@ async function callGeminiAPI(apiKey, systemPrompt, userPrompt, forceModels = nul
           contents: [
             { role: 'user', parts: [{ text: `[시스템 지시사항]\n${systemPrompt}\n\n[사용자 요청 데이터]\n${userPrompt}` }] }
           ],
-          generationConfig: { temperature: 0.2 }
+          generationConfig: { temperature: 0.2 },
+          safetySettings: [
+            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+          ]
         })
       });
       
@@ -493,7 +499,13 @@ async function evaluateStudentRecord(studentId, recordText) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text: area.prompt }, { text: studentUserPrompt }] }],
-            generationConfig: { temperature: 0, response_mime_type: "application/json", maxOutputTokens: 65536 }
+            generationConfig: { temperature: 0, response_mime_type: "application/json", maxOutputTokens: 65536 },
+            safetySettings: [
+              { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+              { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+              { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+              { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+            ]
           })
         }).then(res => res.json().then(data => ({ res, data, area })));
       });
@@ -551,7 +563,13 @@ async function evaluateStudentRecord(studentId, recordText) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text: PROMPT_OVERALL_REPORT }, { text: stage2UserPrompt }] }],
-            generationConfig: { temperature: 0, response_mime_type: "application/json", maxOutputTokens: 65536 }
+            generationConfig: { temperature: 0, response_mime_type: "application/json", maxOutputTokens: 65536 },
+            safetySettings: [
+              { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+              { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+              { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+              { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+            ]
           })
         });
         const reportData = await reportRes.json();
@@ -746,14 +764,30 @@ async function extractTextFromPdf(fileUrl) {
               { inlineData: { mimeType: "application/pdf", data: base64Data } }
             ]
           }],
-          generationConfig: { temperature: 0, maxOutputTokens: 65536 }
+          generationConfig: { temperature: 0, maxOutputTokens: 65536 },
+          safetySettings: [
+            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+          ]
         })
       });
       
       if (response.ok) {
         const responseData = await response.json();
-        if (responseData.candidates && responseData.candidates[0].content.parts[0].text) {
-          return responseData.candidates[0].content.parts[0].text;
+        if (responseData.candidates && responseData.candidates.length > 0) {
+          const candidate = responseData.candidates[0];
+          // 안전 필터(SAFETY) 작동 여부 감지 및 방어 코드
+          if (candidate.finishReason === 'SAFETY') {
+            console.warn('안전 필터에 의해 차단되었습니다.', candidate.safetyRatings);
+            lastError = new Error(`${currentModel} API 차단: 안전 필터 발동`);
+            continue; // 차단 시 즉시 뻗지 않고 다음 모델로 재시도
+          }
+          // content 및 parts 속성이 안전하게 존재하는지 확인
+          if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
+            return candidate.content.parts[0].text;
+          }
         }
       }
       lastError = new Error(`${currentModel} API 호출 실패 (상태 코드: ${response.status})`);
