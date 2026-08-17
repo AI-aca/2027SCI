@@ -1716,6 +1716,14 @@ async function updateStudent(payload) {
     };
     const { error } = await window.supabaseClient.from('students').update(updateObj).eq('student_link', originalLink);
     if (error) throw error;
+
+    // record_basis 테이블의 target_school 독립 업데이트
+    if (updateObj.target_school) {
+      await window.supabaseClient.from('record_basis')
+        .update({ target_school: updateObj.target_school })
+        .eq('student_link', originalLink);
+    }
+
     return { success: true };
   } catch (err) {
     return { success: false, error: err.toString() };
