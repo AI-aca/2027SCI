@@ -521,7 +521,13 @@ async function evaluateStudentRecord(studentId, recordText) {
           let success = false;
           if (res.ok && data.candidates && data.candidates[0].content.parts[0].text) {
              try {
-                const chunk = JSON.parse(data.candidates[0].content.parts[0].text);
+                let rawText = data.candidates[0].content.parts[0].text;
+                const sIdx = rawText.indexOf('{');
+                const eIdx = rawText.lastIndexOf('}');
+                if (sIdx !== -1 && eIdx !== -1 && eIdx >= sIdx) {
+                    rawText = rawText.substring(sIdx, eIdx + 1);
+                }
+                const chunk = JSON.parse(rawText);
                 Object.assign(finalParsedData, chunk);
                 success = true;
              } catch(e) {
@@ -574,7 +580,13 @@ async function evaluateStudentRecord(studentId, recordText) {
         });
         const reportData = await reportRes.json();
         if (reportRes.ok && reportData.candidates && reportData.candidates[0].content.parts[0].text) {
-          const parsedReport = JSON.parse(reportData.candidates[0].content.parts[0].text);
+          let rawReport = reportData.candidates[0].content.parts[0].text;
+          const sIdx = rawReport.indexOf('{');
+          const eIdx = rawReport.lastIndexOf('}');
+          if (sIdx !== -1 && eIdx !== -1 && eIdx >= sIdx) {
+              rawReport = rawReport.substring(sIdx, eIdx + 1);
+          }
+          const parsedReport = JSON.parse(rawReport);
           finalParsedData.overallReport = parsedReport.overallReport || '';
           reportSuccess = true;
           break;
