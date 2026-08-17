@@ -523,9 +523,18 @@ async function evaluateStudentRecord(studentId, recordText) {
              try {
                 let rawText = data.candidates[0].content.parts[0].text;
                 const sIdx = rawText.indexOf('{');
-                const eIdx = rawText.lastIndexOf('}');
-                if (sIdx !== -1 && eIdx !== -1 && eIdx >= sIdx) {
-                    rawText = rawText.substring(sIdx, eIdx + 1);
+                if (sIdx !== -1) {
+                    let braceCount = 0;
+                    let eIdx = -1;
+                    for (let i = sIdx; i < rawText.length; i++) {
+                        if (rawText[i] === '{') braceCount++;
+                        else if (rawText[i] === '}') braceCount--;
+                        if (braceCount === 0) {
+                            eIdx = i;
+                            break;
+                        }
+                    }
+                    if (eIdx !== -1) rawText = rawText.substring(sIdx, eIdx + 1);
                 }
                 const chunk = JSON.parse(rawText);
                 Object.assign(finalParsedData, chunk);
@@ -582,9 +591,18 @@ async function evaluateStudentRecord(studentId, recordText) {
         if (reportRes.ok && reportData.candidates && reportData.candidates[0].content.parts[0].text) {
           let rawReport = reportData.candidates[0].content.parts[0].text;
           const sIdx = rawReport.indexOf('{');
-          const eIdx = rawReport.lastIndexOf('}');
-          if (sIdx !== -1 && eIdx !== -1 && eIdx >= sIdx) {
-              rawReport = rawReport.substring(sIdx, eIdx + 1);
+          if (sIdx !== -1) {
+              let braceCount = 0;
+              let eIdx = -1;
+              for (let i = sIdx; i < rawReport.length; i++) {
+                  if (rawReport[i] === '{') braceCount++;
+                  else if (rawReport[i] === '}') braceCount--;
+                  if (braceCount === 0) {
+                      eIdx = i;
+                      break;
+                  }
+              }
+              if (eIdx !== -1) rawReport = rawReport.substring(sIdx, eIdx + 1);
           }
           const parsedReport = JSON.parse(rawReport);
           finalParsedData.overallReport = parsedReport.overallReport || '';
