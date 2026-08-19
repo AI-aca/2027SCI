@@ -83,15 +83,30 @@ window.updatePassStatusFrontend = async function(studentLink, passType, passValu
       const student = STUDENTS_LIST.find(s => s.studentLink === studentLink);
       if (student) {
         student[passType] = passValue;
-        if (passType === 'passGifted' && passValue === '합') {
-          student.passRound1 = '-';
-          student.passRound2 = '-';
-          student.passFinal = '-';
-        } else if (passType === 'passRound1' && passValue === '불') {
-          student.passRound2 = '불';
-          student.passFinal = '불';
-        } else if (passType === 'passRound2' && passValue === '불') {
-          student.passFinal = '불';
+        if (passType === 'passGifted') {
+          if (passValue === '합') {
+            student.passRound1 = '-';
+            student.passRound2 = '-';
+            student.passFinal = '-';
+          } else if (passValue === '-') {
+            student.passRound1 = '대기';
+            student.passRound2 = '대기';
+            student.passFinal = '대기';
+          }
+        } else if (passType === 'passRound1') {
+          if (passValue === '불') {
+            student.passRound2 = '불';
+            student.passFinal = '불';
+          } else if (passValue === '합' || passValue === '대기') {
+            student.passRound2 = '대기';
+            student.passFinal = '대기';
+          }
+        } else if (passType === 'passRound2') {
+          if (passValue === '불') {
+            student.passFinal = '불';
+          } else if (passValue === '합' || passValue === '대기') {
+            student.passFinal = '대기';
+          }
         }
         if (typeof renderMainTable === 'function') {
           renderMainTable();
@@ -768,14 +783,26 @@ function renderMainTable() {
            else if (forcedVal === '불') { statusColor = '#ef4444'; statusIcon = 'fa-circle-xmark'; }
            else if (forcedVal === '-') { statusColor = '#94a3b8'; statusIcon = 'fa-minus'; }
            
+           let optionsHtml = '';
+           if (col.key === 'passGifted') {
+             optionsHtml = `
+               <option value="-" ${forcedVal === '-' ? 'selected' : ''}>-</option>
+               <option value="합" ${forcedVal === '합' ? 'selected' : ''}>합</option>
+             `;
+           } else {
+             optionsHtml = `
+                <option value="대기" ${forcedVal === '대기' ? 'selected' : ''}>대기</option>
+                <option value="합" ${forcedVal === '합' ? 'selected' : ''}>합</option>
+                <option value="불" ${forcedVal === '불' ? 'selected' : ''}>불</option>
+                <option value="-" ${forcedVal === '-' ? 'selected' : ''} style="display:none;">-</option>
+             `;
+           }
+           
            td.innerHTML = `
              <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
                <i class="fa-solid ${statusIcon}" id="icon-${student.studentLink}-${col.key}" style="color: ${statusColor}; font-size: 14px;"></i>
                <select class="form-control" style="width:auto; padding:2px 4px; font-size:14px; background:var(--bg-card); color:var(--text-main);" ${disabled} onchange="window.updatePassStatusFrontend('${student.studentLink}', '${col.key}', this.value);">
-                  <option value="대기" ${forcedVal === '대기' ? 'selected' : ''}>대기</option>
-                  <option value="합" ${forcedVal === '합' ? 'selected' : ''}>합</option>
-                  <option value="불" ${forcedVal === '불' ? 'selected' : ''}>불</option>
-                  <option value="-" ${forcedVal === '-' ? 'selected' : ''} style="display:none;">-</option>
+                  ${optionsHtml}
                </select>
              </div>
            `;

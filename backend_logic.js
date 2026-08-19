@@ -1385,7 +1385,7 @@ async function getStudentsList() {
           questions: s.expected_questions_ai || '',
           studentAnswers: practiceMap[s.student_link || s.id] || '',
           isParsed: parsedSet.has(s.student_link || s.id),
-          passGifted: s.result_gifted || '대기',
+          passGifted: (s.result_gifted === '합' ? '합' : '-'),
           passRound1: s.result_1st || '대기',
           passRound2: s.result_2nd || '대기',
           passFinal: s.result_final || '대기',
@@ -1408,17 +1408,26 @@ async function updatePassStatus(payload) {
         updates['result_1st'] = '-';
         updates['result_2nd'] = '-';
         updates['result_final'] = '-';
+      } else if (payload.passValue === '-') {
+        updates['result_1st'] = '대기';
+        updates['result_2nd'] = '대기';
+        updates['result_final'] = '대기';
       }
     } else if (payload.passType === 'passRound1') {
       updates['result_1st'] = payload.passValue;
       if (payload.passValue === '불') {
         updates['result_2nd'] = '불';
         updates['result_final'] = '불';
+      } else if (payload.passValue === '합' || payload.passValue === '대기') {
+        updates['result_2nd'] = '대기';
+        updates['result_final'] = '대기';
       }
     } else if (payload.passType === 'passRound2') {
       updates['result_2nd'] = payload.passValue;
       if (payload.passValue === '불') {
         updates['result_final'] = '불';
+      } else if (payload.passValue === '합' || payload.passValue === '대기') {
+        updates['result_final'] = '대기';
       }
     } else if (payload.passType === 'passFinal') {
       updates['result_final'] = payload.passValue;
