@@ -816,7 +816,7 @@ function openEditStudent(studentLink) {
   const btnHardDelete = document.getElementById('btn-hard-delete-student');
   if (deleteGroup) {
     deleteGroup.style.display = 'flex';
-    if (CURRENT_ROLE === '관리자') {
+    if (CURRENT_ROLE === '관리자' || CURRENT_ROLE === '교사') {
       btnHardDelete.style.display = 'block';
     } else {
       btnHardDelete.style.display = 'none';
@@ -3816,4 +3816,56 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-save-memo')?.addEventListener('click', window.saveMemo);
   document.getElementById('btn-generate-ai-checklist')?.addEventListener('click', window.generateChecklist);
 });
+
+window.verifyBackupPassword = function() {
+  const pw = prompt('데이터베이스 백업을 진행하려면 관리자 비밀번호를 다시 한 번 입력하세요.');
+  if (pw === 'w2027pass!@#') {
+    document.getElementById('modal-db-backup').style.display = 'flex';
+  } else if (pw !== null) {
+    alert('비밀번호가 일치하지 않습니다.');
+  }
+};
+
+window.downloadTableCSV = async function(tableName) {
+  if (!window.supabaseClient) {
+    alert('Supabase 클라이언트가 초기화되지 않았습니다.');
+    return;
+  }
+  
+  try {
+    const { data, error } = await window.supabaseClient.from(tableName).select('*');
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      alert(tableName + ' 테이블에 데이터가 없습니다.');
+      return;
+    }
+    
+    const headers = Object.keys(data[0]);
+    let csvContent = '\uFEFF' + headers.join(',') + '\n';
+    
+    data.forEach(row => {
+      const rowArr = headers.map(header => {
+        let cell = row[header] === null || row[header] === undefined ? '' : String(row[header]);
+        cell = cell.replace(/"/g, '""');
+        if (cell.includes(',') || cell.includes('\n') || cell.includes('"') || cell.includes('\r')) {
+          cell = `"${cell}"`;
+        }
+        return cell;
+      });
+      csvContent += rowArr.join(',') + '\n';
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `backup_${tableName}_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+  } catch (err) {
+    alert(tableName + ' 백업 실패: ' + err.message);
+  }
+};
 

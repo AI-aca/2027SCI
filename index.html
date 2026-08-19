@@ -219,6 +219,19 @@
             </div>
           </div>
         </div>
+        
+        <hr>
+        <!-- 데이터베이스 백업 및 관리 -->
+        <div class="form-group" style="margin-bottom: 20px;">
+          <div class="settings-header" style="margin-bottom: 0;">
+            <h3 style="white-space: nowrap;"><i class="fa-solid fa-database"></i> 데이터베이스 백업 관리</h3>
+            <button class="btn-action" style="padding: 6px 12px; font-size: 14px; background-color: var(--color-danger);" onclick="verifyBackupPassword()">전체 테이블 CSV 백업창 열기</button>
+            <div style="display: flex; gap: 10px; flex: 1; align-items: center; justify-content: flex-end;">
+              <span style="font-size: 13px; color: var(--text-muted);">※ 안전한 브라우저 변환을 통해 대용량 테이블 데이터를 개별 파싱하여 추출합니다.</span>
+            </div>
+          </div>
+        </div>
+
           <!-- 구글 연동 완전 삭제됨 -->
       </div>
       
@@ -592,6 +605,31 @@
       </div>
       <div class="modal-footer">
         <button class="btn-action btn-secondary" id="btn-close-score-details-bottom">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DB 백업 모달 -->
+  <div class="modal-overlay" id="modal-db-backup">
+    <div class="modal-container" style="max-width: 600px; width: 90%;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-database"></i> 데이터베이스 전체 백업 (CSV)</h3>
+        <button class="btn-close" onclick="document.getElementById('modal-db-backup').style.display='none'">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 15px; color: var(--text-muted); font-size: 14px;">대용량 텍스트 파싱 에러를 우회하여 브라우저에서 직접 데이터를 CSV로 이스케이프 및 변환하여 안전하게 다운로드합니다. 백업할 테이블을 선택하세요.</p>
+        <div style="display: flex; flex-direction: column; gap: 10px;" id="backup-table-list">
+          <button class="btn-action" style="justify-content: space-between; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color);" onclick="downloadTableCSV('students')"><span>students (학생 정보)</span><i class="fa-solid fa-download"></i></button>
+          <button class="btn-action" style="justify-content: space-between; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color);" onclick="downloadTableCSV('personal_statements')"><span>personal_statements (자기소개서 문항)</span><i class="fa-solid fa-download"></i></button>
+          <button class="btn-action" style="justify-content: space-between; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color);" onclick="downloadTableCSV('parsed_records')"><span>parsed_records (생기부 파싱 원문)</span><i class="fa-solid fa-download"></i></button>
+          <button class="btn-action" style="justify-content: space-between; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color);" onclick="downloadTableCSV('record_basis')"><span>record_basis (생기부 AI 분석 및 채점)</span><i class="fa-solid fa-download"></i></button>
+          <button class="btn-action" style="justify-content: space-between; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color);" onclick="downloadTableCSV('interview_practice')"><span>interview_practice (면접 예상질문 및 답변)</span><i class="fa-solid fa-download"></i></button>
+          <button class="btn-action" style="justify-content: space-between; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color);" onclick="downloadTableCSV('teacher_feedbacks')"><span>teacher_feedbacks (교사 피드백)</span><i class="fa-solid fa-download"></i></button>
+          <button class="btn-action" style="justify-content: space-between; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color);" onclick="downloadTableCSV('ai_feedback_history')"><span>ai_feedback_history (AI 체크리스트 피드백)</span><i class="fa-solid fa-download"></i></button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-action btn-secondary" onclick="document.getElementById('modal-db-backup').style.display='none'">닫기</button>
       </div>
     </div>
   </div>
