@@ -1872,7 +1872,7 @@ function bindEventHandlers() {
       const subMap = {
         dashboard: '2027 과학고 지원자 합격 현황 대시보드',
         info: '학원생 기본 인적사항 및 연락처 조회',
-        record: '생활기록부 점수 400점 만점 대비 채점 상세 (🚨: 생기부 성적 누락 내용을 만점으로 처리한 학생)',
+        record: '생활기록부 점수 400점 만점 대비 채점 상세',
         ps: '자기소개서 🚀최종제출 및 이력 롤백 복원 창',
         interview: 'AI 질문 생성 목록 및 학생 구술 답변 연습 관리',
         guide: '목표 과학고등학교 입학요강 열람',
@@ -1881,7 +1881,12 @@ function bindEventHandlers() {
         'user-guide': '역할 및 권한별 시스템 상세 이용 매뉴얼'
       };
       
-      document.getElementById('content-title').textContent = titleMap[CURRENT_MENU] || '초기 화면';
+      if (CURRENT_MENU === 'record') {
+        document.getElementById('content-title').innerHTML = `${titleMap[CURRENT_MENU] || '생활기록부 채점 현황'} <span style="font-size: 14px; background-color: rgba(255, 0, 0, 0.15); border: 1px solid #ff4444; color: #ff6666; padding: 4px 12px; border-radius: 20px; font-weight: bold; margin-left: 14px; vertical-align: middle; display: inline-block; transform: translateY(-2px);"><i class="fa-solid fa-triangle-exclamation"></i> 🚨 생기부 성적 누락 시 전 학년 만점 처리 적용 중</span>`;
+      } else {
+        document.getElementById('content-title').textContent = titleMap[CURRENT_MENU] || '초기 화면';
+      }
+      
       document.getElementById('content-subtitle').textContent = subMap[CURRENT_MENU] || '';
       
       // UI 노출 통제 (설정 패널 활성화 관련)
