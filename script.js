@@ -877,7 +877,7 @@ function openEditStudent(studentLink) {
   const btnHardDelete = document.getElementById('btn-hard-delete-student');
   if (deleteGroup) {
     deleteGroup.style.display = 'flex';
-    if (CURRENT_ROLE === '관리자' || CURRENT_ROLE === '교사') {
+    if (CURRENT_ROLE === '관리자') {
       btnHardDelete.style.display = 'block';
     } else {
       btnHardDelete.style.display = 'none';
@@ -1559,44 +1559,7 @@ async function openInterviewPractice(studentLink, mode) {
   const isPsMode = ACTIVE_INTERVIEW_MODE === "ps";
   document.getElementById('interview-modal-title').textContent = `${student.name} 학생 예상 면접 질문 연습 (${isPsMode ? '자소서' : '생기부'} 기반)`;
   
-  // 권한에 따라 질문 생성 버튼 노출 및 Validation 적용
-  const btnPs = document.getElementById('btn-generate-ai-questions-ps');
-  const btnRecord = document.getElementById('btn-generate-ai-questions-record');
-  
-  btnPs.style.display = 'none';
-  btnRecord.style.display = 'none';
-  
-  if (CURRENT_ROLE === '관리자') {
-    if (isPsMode) {
-      btnPs.style.display = 'inline-block';
-      // Validation: 자소서 상태가 '최종제출'일 때만 버튼 활성화
-      if (student.psStatus !== '최종제출') {
-        btnPs.disabled = true;
-        btnPs.title = "자소서가 '최종제출' 상태여야 생성할 수 있습니다.";
-        btnPs.style.opacity = '0.5';
-        btnPs.style.cursor = 'not-allowed';
-      } else {
-        btnPs.disabled = false;
-        btnPs.title = "";
-        btnPs.style.opacity = '1';
-        btnPs.style.cursor = 'pointer';
-      }
-    } else {
-      btnRecord.style.display = 'inline-block';
-      // Validation: 생기부 파일이 있을 때만 버튼 활성화
-      if (!student.recordPdf) {
-        btnRecord.disabled = true;
-        btnRecord.title = "생기부 파일이 업로드되어 있어야 생성할 수 있습니다.";
-        btnRecord.style.opacity = '0.5';
-        btnRecord.style.cursor = 'not-allowed';
-      } else {
-        btnRecord.disabled = false;
-        btnRecord.title = "";
-        btnRecord.style.opacity = '1';
-        btnRecord.style.cursor = 'pointer';
-      }
-    }
-  }
+
   
   const qList = document.getElementById('interview-question-list');
   qList.innerHTML = '<p class="text-muted" style="padding: 20px;">예상 질문을 서버에서 조회 중입니다...</p>';
@@ -2443,71 +2406,7 @@ function bindEventHandlers() {
     };
   }
 
-  // 자소서 기반 AI 예상 질문 생성 버튼 연동
-  const genAIQuestionsPsBtn = document.getElementById('btn-generate-ai-questions-ps');
-  if (genAIQuestionsPsBtn) {
-    genAIQuestionsPsBtn.onclick = async () => {
-      if (!ACTIVE_INTERVIEW_STUDENT) return;
-      
-      const student = STUDENTS_LIST.find(s => String(s.studentLink) === String(ACTIVE_INTERVIEW_STUDENT));
-      if (student && student.studentAnswers) {
-        try {
-          const ans = JSON.parse(student.studentAnswers);
-          if (Object.keys(ans).length > 0) {
-            alert('학생 답변이 이미 작성되어 있어 새로운 예상 질문 생성이 불가합니다.');
-            return;
-          }
-        } catch (e) {}
-      }
-      
-      try {
-        alert('자소서 기반 AI 예상 질문 생성을 시작합니다. (시간이 다소 소요됩니다)');
-        const res = await ApiClient.post('generateAIQuestions', { studentId: ACTIVE_INTERVIEW_STUDENT, type: '자소서' });
-        if (res.success) {
-          alert('자소서 기반 예상 질문 생성이 완료되었습니다.');
-          loadStudentsData();
-          openInterviewPractice(ACTIVE_INTERVIEW_STUDENT);
-        } else {
-          throw new Error(res.error);
-        }
-      } catch (e) {
-        alert('질문 생성 실패: ' + e.toString());
-      }
-    };
-  }
 
-  // 생기부 기반 AI 예상 질문 생성 버튼 연동
-  const genAIQuestionsRecordBtn = document.getElementById('btn-generate-ai-questions-record');
-  if (genAIQuestionsRecordBtn) {
-    genAIQuestionsRecordBtn.onclick = async () => {
-      if (!ACTIVE_INTERVIEW_STUDENT) return;
-      
-      const student = STUDENTS_LIST.find(s => String(s.studentLink) === String(ACTIVE_INTERVIEW_STUDENT));
-      if (student && student.studentAnswers) {
-        try {
-          const ans = JSON.parse(student.studentAnswers);
-          if (Object.keys(ans).length > 0) {
-            alert('학생 답변이 이미 작성되어 있어 새로운 예상 질문 생성이 불가합니다.');
-            return;
-          }
-        } catch (e) {}
-      }
-      
-      try {
-        alert('생기부 기반 AI 예상 질문 생성을 시작합니다. (시간이 다소 소요됩니다)');
-        const res = await ApiClient.post('generateAIQuestions', { studentId: ACTIVE_INTERVIEW_STUDENT, type: '생기부' });
-        if (res.success) {
-          alert('생기부 기반 예상 질문 생성이 완료되었습니다.');
-          loadStudentsData();
-          openInterviewPractice(ACTIVE_INTERVIEW_STUDENT);
-        } else {
-          throw new Error(res.error);
-        }
-      } catch (e) {
-        alert('질문 생성 실패: ' + e.toString());
-      }
-    };
-  }
 
   // 설정 개별 저장 버튼 연동 (4개 구역 모두 동일하게 전체 DOM 상태를 저장)
   const executeSaveSettings = async () => {
@@ -3600,7 +3499,23 @@ async function runSingleAIFeedback(studentId) {
 }
 
 async function runSingleAIQuestions(studentId, mode) {
+  const student = STUDENTS_LIST.find(s => String(s.studentLink) === String(studentId));
+  if (!student) return;
+
   const isPsMode = mode === 'ps' || mode === '자소서';
+  
+  if (isPsMode) {
+    if (student.psStatus !== '최종제출') {
+      alert("⚠️ 자소서가 '최종제출' 상태여야 예상질문 생성이 가능합니다.");
+      return;
+    }
+  } else {
+    if (!student.isParsed) {
+      alert("⚠️ 생기부 AI 파싱이 먼저 완료되어야 예상질문 생성이 가능합니다.");
+      return;
+    }
+  }
+
   if (!confirm(`해당 학생에 대해 AI ${isPsMode ? '자소서' : '생기부'} 예상질문 생성을 실행하시겠습니까?`)) return;
   try {
     const res = await ApiClient.post('generateAIQuestions', { studentId, type: isPsMode ? '자소서' : '생기부' });
