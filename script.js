@@ -168,10 +168,10 @@ function parseMarkdownToHtml(text) {
     .replace(/🗣️ 면접 질문:/gim, '<span style="color: var(--color-primary); font-weight: bold;">🗣️ 면접 질문:</span>')
     .replace(/🎯 출제 의도:/gim, '<span style="color: var(--color-primary); font-weight: bold;">🎯 출제 의도:</span>')
     .replace(/🔗 꼬리 질문:/gim, '<span style="color: var(--color-primary); font-weight: bold;">🔗 꼬리 질문:</span>')
+    .replace(/^&gt;\s?🚨\s?\*\*(.*?)\*\*(.*$)/gim, '<div style="background-color: rgba(255, 0, 0, 0.1); border: 1px solid #ff4444; color: #ff6666; font-weight: bold; padding: 12px; border-radius: 6px; margin: 12px 0;">🚨 $1$2</div>')
     .replace(/\*\*(.*?)\*\*/gim, '<strong style="color: #fff;">$1</strong>')
     .replace(/^\* (.*$)/gim, '<li style="margin-left: 20px; margin-bottom: 4px;">$1</li>')
     .replace(/^- (.*$)/gim, '<li style="margin-left: 20px; list-style-type: circle; margin-bottom: 4px;">$1</li>')
-    .replace(/^&gt;\s?🚨\s?\*\*(.*?)\*\*(.*$)/gim, '<div style="background-color: rgba(255, 0, 0, 0.1); border: 1px solid #ff4444; color: #ff6666; font-weight: bold; padding: 12px; border-radius: 6px; margin: 12px 0;">🚨 $1$2</div>')
     .replace(/^&gt;\s?(.*$)/gim, '<div style="border-left: 3px solid var(--color-primary); background: rgba(0,0,0,0.2); margin: 8px 0; padding: 12px; color: var(--text-muted); line-height: 1.5;">$1</div>')
     .replace(/\s*\[종합 총평\]\s*/g, '<br><br>');
     
@@ -2884,6 +2884,9 @@ async function openScoreDetailsModal(studentLink) {
   const student = STUDENTS_LIST.find(s => String(s.studentLink) === String(studentLink));
   if (!student) return;
   
+  const scoreVal = String(student.recordScore || 0);
+  const displayScore = scoreVal.includes('🚨') ? scoreVal.replace(' 🚨', '').replace('🚨', '').trim() + '점 🚨' : scoreVal + '점';
+
   summaryCard.innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: center;">
       <div>
@@ -2891,7 +2894,7 @@ async function openScoreDetailsModal(studentLink) {
         <span style="font-size: 14px; color: var(--text-muted);">연락처: ${student.studentPhone}</span>
       </div>
       <div style="text-align: right;">
-        <span style="font-size: 20px; font-weight: bold; color: var(--color-primary);">${student.recordScore || 0}점</span>
+        <span style="font-size: 20px; font-weight: bold; color: var(--color-primary);">${displayScore}</span>
         <span style="font-size: 14px; color: var(--text-muted); display: block;" id="score-basis-time">조회 중...</span>
       </div>
     </div>
