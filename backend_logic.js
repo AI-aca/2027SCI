@@ -1316,11 +1316,11 @@ async function getStudentsList() {
       const { data: students } = await window.supabaseClient.from('students').select('*');
       if (!students) return [];
       
-      const { data: practices } = await window.supabaseClient.from('interview_practice').select('student_link');
+      const { data: practices } = await window.supabaseClient.from('interview_practice').select('student_link, answers_json');
       const practiceMap = {};
       if (practices) {
         practices.forEach(p => {
-          practiceMap[p.student_link] = '';
+          practiceMap[p.student_link] = p.answers_json || '';
         });
       }
       

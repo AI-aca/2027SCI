@@ -1650,7 +1650,7 @@ async function openInterviewPractice(studentLink, mode) {
     return sets;
   }
   
-  const rawText = isPsMode ? (questionsData.psQuestions || '') : (questionsData.recordQuestions || '');
+  const rawText = isPsMode ? (questionsData.statement_questions_json || '') : (questionsData.record_questions_json || '');
   const questionSets = parseQuestionSets(rawText);
   
   if (questionSets.length === 0) {
