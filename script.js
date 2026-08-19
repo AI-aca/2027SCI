@@ -3820,7 +3820,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.verifyBackupPassword = function() {
   const pw = prompt('데이터베이스 백업을 진행하려면 관리자 비밀번호를 다시 한 번 입력하세요.');
   if (pw === 'w2027pass!@#') {
-    document.getElementById('modal-db-backup').style.display = 'flex';
+    document.getElementById('modal-db-backup').classList.add('open');
   } else if (pw !== null) {
     alert('비밀번호가 일치하지 않습니다.');
   }
