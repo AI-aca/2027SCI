@@ -1245,3 +1245,8 @@ table.main-data-table tbody tr:hover {
   margin-top: 0 !important;
   margin-bottom: 10px !important;
 }
+
+#modal-interview-practice .modal-container {
+  max-height: 95vh;
+  height: 95vh;
+}
