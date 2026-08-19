@@ -79,6 +79,24 @@ window.updatePassStatusFrontend = async function(studentLink, passType, passValu
     const result = await ApiClient.post('updatePassStatus', { studentId: studentLink, passType, passValue }, { hideLoader: true });
     if (!result.success) {
       alert('합불 상태 저장 실패: ' + result.error);
+    } else {
+      const student = STUDENTS_LIST.find(s => s.studentLink === studentLink);
+      if (student) {
+        student[passType] = passValue;
+        if (passType === 'passGifted' && passValue === '합') {
+          student.passRound1 = '-';
+          student.passRound2 = '-';
+          student.passFinal = '-';
+        } else if (passType === 'passRound1' && passValue === '불') {
+          student.passRound2 = '불';
+          student.passFinal = '불';
+        } else if (passType === 'passRound2' && passValue === '불') {
+          student.passFinal = '불';
+        }
+        if (typeof renderMainTable === 'function') {
+          renderMainTable();
+        }
+      }
     }
   } catch (e) {
     alert('합불 통신 오류: ' + e.toString());
@@ -412,6 +430,7 @@ const TABLE_COLUMNS = {
     { label: '학생명', key: 'name' },
     { label: '현재 학교', key: 'school' },
     { label: '지원학교', key: 'targetSchool' },
+    { label: '영재 최종', key: 'passGifted' },
     { label: '1차 합불', key: 'passRound1' },
     { label: '2차 합불', key: 'passRound2' },
     { label: '최종 합불', key: 'passFinal' },
@@ -529,7 +548,7 @@ function renderMainTable() {
     const th = document.createElement('th');
     th.style.textAlign = 'center';
     
-    if (['center', 'name', 'school', 'targetSchool', 'psStatus', 'recordScoreOnly'].includes(col.key)) {
+    if (['center', 'name', 'school', 'targetSchool', 'psStatus', 'recordScoreOnly', 'passGifted', 'passRound1', 'passRound2', 'passFinal'].includes(col.key)) {
       th.style.cursor = 'pointer';
       
       // 기본 상태는 회색 아래쪽 삼각형
@@ -718,29 +737,45 @@ function renderMainTable() {
           td.innerHTML = `<span class="text-muted">미생성</span>` + btnGen;
         }
       }
-      else if (['passRound1', 'passRound2', 'passFinal'].includes(col.key)) {
+      else if (['passGifted', 'passRound1', 'passRound2', 'passFinal'].includes(col.key)) {
         if (CURRENT_ROLE === '학생') {
            let badgeClass = 'gray';
            if (val === '합') badgeClass = 'success';
            else if (val === '불') badgeClass = 'danger';
            td.innerHTML = `<span class="badge ${badgeClass}">${val}</span>`;
         } else {
+           let isGiftedPass = (student.passGifted === '합');
            let isRound1Fail = (student.passRound1 === '불');
-           let disabled = (isRound1Fail && col.key !== 'passRound1') ? 'disabled' : '';
-           let forcedVal = (isRound1Fail && col.key !== 'passRound1') ? '불' : val;
+           let isRound2Fail = (student.passRound2 === '불');
+           
+           let disabled = '';
+           let forcedVal = val;
+           
+           if (isGiftedPass && col.key !== 'passGifted') {
+             disabled = 'disabled';
+             forcedVal = '-';
+           } else if (isRound1Fail && ['passRound2', 'passFinal'].includes(col.key)) {
+             disabled = 'disabled';
+             forcedVal = '불';
+           } else if (isRound2Fail && col.key === 'passFinal') {
+             disabled = 'disabled';
+             forcedVal = '불';
+           }
            
            let statusColor = '#94a3b8';
            let statusIcon = 'fa-circle-dot';
            if (forcedVal === '합') { statusColor = '#10b981'; statusIcon = 'fa-circle-check'; }
            else if (forcedVal === '불') { statusColor = '#ef4444'; statusIcon = 'fa-circle-xmark'; }
+           else if (forcedVal === '-') { statusColor = '#94a3b8'; statusIcon = 'fa-minus'; }
            
            td.innerHTML = `
              <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
                <i class="fa-solid ${statusIcon}" id="icon-${student.studentLink}-${col.key}" style="color: ${statusColor}; font-size: 14px;"></i>
-               <select class="form-control" style="width:auto; padding:2px 4px; font-size:14px; background:var(--bg-card); color:var(--text-main);" ${disabled} onchange="window.updatePassStatusFrontend('${student.studentLink}', '${col.key}', this.value); const icon = document.getElementById('icon-${student.studentLink}-${col.key}'); if (this.value === '합') { icon.className = 'fa-solid fa-circle-check'; icon.style.color = '#10b981'; } else if (this.value === '불') { icon.className = 'fa-solid fa-circle-xmark'; icon.style.color = '#ef4444'; } else { icon.className = 'fa-solid fa-circle-dot'; icon.style.color = '#94a3b8'; }">
+               <select class="form-control" style="width:auto; padding:2px 4px; font-size:14px; background:var(--bg-card); color:var(--text-main);" ${disabled} onchange="window.updatePassStatusFrontend('${student.studentLink}', '${col.key}', this.value);">
                   <option value="대기" ${forcedVal === '대기' ? 'selected' : ''}>대기</option>
                   <option value="합" ${forcedVal === '합' ? 'selected' : ''}>합</option>
                   <option value="불" ${forcedVal === '불' ? 'selected' : ''}>불</option>
+                  <option value="-" ${forcedVal === '-' ? 'selected' : ''} style="display:none;">-</option>
                </select>
              </div>
            `;

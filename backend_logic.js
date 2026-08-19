@@ -1385,6 +1385,7 @@ async function getStudentsList() {
           questions: s.expected_questions_ai || '',
           studentAnswers: practiceMap[s.student_link || s.id] || '',
           isParsed: parsedSet.has(s.student_link || s.id),
+          passGifted: s.result_gifted || '대기',
           passRound1: s.result_1st || '대기',
           passRound2: s.result_2nd || '대기',
           passFinal: s.result_final || '대기',
@@ -1400,12 +1401,32 @@ async function getStudentsList() {
 // 학생 상태 변경(합불)
 async function updatePassStatus(payload) {
   try {
-    let dbColumn = payload.passType;
-    if (payload.passType === 'passRound1') dbColumn = 'result_1st';
-    else if (payload.passType === 'passRound2') dbColumn = 'result_2nd';
-    else if (payload.passType === 'passFinal') dbColumn = 'result_final';
+    let updates = {};
+    if (payload.passType === 'passGifted') {
+      updates['result_gifted'] = payload.passValue;
+      if (payload.passValue === '합') {
+        updates['result_1st'] = '-';
+        updates['result_2nd'] = '-';
+        updates['result_final'] = '-';
+      }
+    } else if (payload.passType === 'passRound1') {
+      updates['result_1st'] = payload.passValue;
+      if (payload.passValue === '불') {
+        updates['result_2nd'] = '불';
+        updates['result_final'] = '불';
+      }
+    } else if (payload.passType === 'passRound2') {
+      updates['result_2nd'] = payload.passValue;
+      if (payload.passValue === '불') {
+        updates['result_final'] = '불';
+      }
+    } else if (payload.passType === 'passFinal') {
+      updates['result_final'] = payload.passValue;
+    } else {
+      updates[payload.passType] = payload.passValue;
+    }
     
-    await window.supabaseClient.from('students').update({ [dbColumn]: payload.passValue }).eq('student_link', payload.studentId);
+    await window.supabaseClient.from('students').update(updates).eq('student_link', payload.studentId);
     return { success: true };
   } catch (err) {
     return { success: false, error: err.toString() };
