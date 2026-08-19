@@ -383,24 +383,18 @@ async function generateAIQuestions(studentId, type) {
     const questionText = await callGeminiWithFallback(systemPrompt, userPrompt);
     
     const { data: existingPract } = await window.supabaseClient.from('interview_practice').select('*').eq('student_link', studentId).maybeSingle();
-    let qObj = {};
-    if (existingPract && existingPract.questions_json) {
-      try { qObj = JSON.parse(existingPract.questions_json); } catch(e){}
-    }
-    
-    if (type === '자소서') {
-      qObj.statement_questions_json = questionText;
-      qObj.psVerText = '자소서 최신버전';
-    } else {
-      qObj.record_questions_json = questionText;
-      qObj.recordVerText = '생기부 분석 기준';
-    }
-    
     let updateObj = { 
       student_link: studentId, 
-      created_at: new Date().toISOString(),
-      questions_json: JSON.stringify(qObj)
+      created_at: new Date().toISOString()
     };
+    
+    if (type === '자소서') {
+      updateObj.statement_questions_json = questionText;
+      updateObj.base_version = '자소서 최신버전';
+    } else {
+      updateObj.record_questions_json = questionText;
+      updateObj.base_version = '생기부 분석 기준';
+    }
     
     let questErr;
     if (existingPract && existingPract.id) {
@@ -1725,11 +1719,7 @@ async function getAIQuestions(payload) {
     const { data: practice } = await window.supabaseClient.from('interview_practice').select('*').eq('student_link', studentId).single();
     if (!practice) return { success: true, statement_questions_json: '', record_questions_json: '' };
     
-    let qList = {};
-    if (practice.questions_json) {
-      try { qList = JSON.parse(practice.questions_json); } catch(e){}
-    }
-    return { success: true, statement_questions_json: qList.statement_questions_json || '', record_questions_json: qList.record_questions_json || '' };
+    return { success: true, statement_questions_json: practice.statement_questions_json || '', record_questions_json: practice.record_questions_json || '' };
   } catch (err) {
     return { success: false, error: err.toString() };
   }
