@@ -117,35 +117,11 @@ async function generateAIChecklist(studentLink, qNum, statementText) {
       }
     }
 
-    // const { data: fbPromptData } = await window.supabaseClient.from('settings').select('setting_value').eq('setting_key', 'prompt_checklist').single();
-    let systemPrompt = `당신은 과학고 입시를 전담하는 기계적인 검증 봇(Bot). 글자수와 관련된 피드백이나 지적은 절대 금지합니다.
-사용자가 입력한 질문 내용을 분석하여 다음 4가지 카테고리 중 하나로 판단하세요:
-1) MATH_SCI (수학/과학 탐구)
-2) MOTIVE (지원동기 및 진로계획)
-3) CHARACTER (인성 및 공동체)
-4) DIVERSITY_BOOK (인문융합/독서/사회이슈)
-
-각 카테고리 판별 시 아래 명시된 핀셋 평가 기준(category)에 대해서만 평가를 수행하세요:
-- MATH_SCI: '제목 적합성', '시행착오 및 막힌 지점', '구체적 수치/데이터', '주어 및 관점'
-- MOTIVE: '탐구 계기 연계', '특화 환경 지목', '관심 분야 명시'
-- CHARACTER: '구체적 상황', '본인의 직접 행동', '행동 및 태도 변화'
-- DIVERSITY_BOOK: '관점의 비교·대조', '진로/학업 영향', '해결 방안 구체성'
-
-[결격 사유(exclusions) 판별 기준]
-- '교내 대회' 및 '교내 활동'은 결격 사유가 아니므로 절대 위반(found: true)으로 처리하지 마세요.
-- 오직 '외부 수상 실적', '영재교육원 수료 여부', '부모 및 친인척의 사회/경제적 지위'를 명시적으로 언급한 경우에만 exclusions의 found를 true로 반환하고 detail에 사유를 적으세요.
-
-다른 설명이나 마크다운 백틱(\`\`\`)은 절대 포함하지 말고, 아래 JSON 구조로만 응답하세요:
-{
-  "exclusions": { "found": false, "detail": "위반 문장 발견시 작성" },
-  "checklist": [
-    { "category": "제목 적합성", "status": "완료", "feedback": "피드백 내용" }
-  ]
-}
-주의: status는 반드시 "완료", "보완", "위기" 중 하나여야 합니다. (아예 누락되었거나 내용이 심각하게 부족할 때는 "위기" 사용)
-중요: feedback 내용 작성 시 경어체(~습니다)를 절대 사용하지 마세요. 문장을 짧고 간결하게 끊고, 반드시 명사형 종결(~음, ~함, ~필요, ~누락 등) 어투(음슴체)를 엄격하게 적용하세요.
-예시: "글 서두나 문맥 상에 탐구의 핵심 주제(과학적 원리 등)가 명확히 제시되지 않음. 주제 적합성 보완 필요."
-주의사항: 학생이 별도의 독립된 제목을 상단에 적지 않았더라도, 본문 서술을 통해 탐구의 핵심 주제와 과학적 원리가 명확히 전달된다면 제목 적합성을 '완료'로 판정하세요. 시각적으로 분리된 제목 텍스트의 유무만을 따지지 마세요.`;
+    const { data: fbPromptData, error: promptErr } = await window.supabaseClient.from('settings').select('setting_value').eq('setting_key', 'prompt_checklist').single();
+    if (promptErr || !fbPromptData || !fbPromptData.setting_value) {
+      throw new Error('수파베이스에서 체크리스트 프롬프트를 불러오지 못했습니다.');
+    }
+    let systemPrompt = fbPromptData.setting_value;
     
     let userPrompt = `[문항 ${qNum}번 정보]\n`;
     if (qContent) userPrompt += `질문: ${qContent}\n\n`;

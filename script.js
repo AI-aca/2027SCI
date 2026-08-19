@@ -1262,7 +1262,8 @@ function renderChecklistToHTML(jsonString) {
           case '제목 적합성': displayCategory = '제목/주제<br>적합성'; break;
           case '시행착오 및 막힌 지점': displayCategory = '시행착오<br>및<br>막힌 지점'; break;
           case '구체적 수치/데이터':
-          case '구체적 수치 및 데이터 활용': displayCategory = '구체적 수치<br>및<br>데이터 활용'; break;
+          case '구체적 수치 및 데이터 활용':
+          case '탐구 구체성 및 데이터 활용': displayCategory = '탐구 구체성<br>및<br>데이터 활용'; break;
           case '주어 및 관점': displayCategory = '주어 및<br>관점'; break;
           case '탐구 계기 연계': displayCategory = '탐구 계기<br>연계'; break;
           case '특화 환경 지목': displayCategory = '특화 환경<br>지목'; break;
