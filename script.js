@@ -1637,12 +1637,20 @@ async function openInterviewPractice(studentLink, mode) {
       resetBtn.style.color = '#fff';
       resetBtn.innerHTML = `<i class="fa-solid fa-trash"></i> ${isPsMode ? '자소서' : '생기부'} 예상질문 전체 초기화`;
       resetBtn.onclick = async () => {
-        if (!confirm(`정말 해당 학생의 ${isPsMode ? '자소서' : '생기부'} 예상질문을 모두 삭제하시겠습니까? (이 작업은 되돌릴 수 없습니다)`)) return;
-        if (!confirm(`경고: 질문을 삭제하면 재생성 전까지 '미생성' 상태로 되돌아갑니다. 최종 삭제하시겠습니까?`)) return;
+        if (!confirm(`정말 해당 학생의 ${isPsMode ? '자소서' : '생기부'} 예상질문을 모두 삭제하시겠습니까?`)) return;
+        if (!confirm(`경고: 질문을 삭제하면 재생성 전까지 '미생성' 상태로 되돌아가며, 학생의 답변도 함께 삭제 됩니다. 최종 삭제하시겠습니까?`)) return;
         
         try {
+          // 해당 모드의 질문(title) 키값들을 찾아서 answersObj에서 모두 삭제 (학생 답변 싹 다 날림)
+          let currentAnswers = {};
+          try { currentAnswers = JSON.parse(student.studentAnswers || '{}'); } catch(e){}
+          questionSets.forEach(q => {
+             delete currentAnswers[q.title];
+          });
+          const updatedAnswersText = JSON.stringify(currentAnswers);
+
           const typeStr = isPsMode ? '자소서' : '생기부';
-          const res = await ApiClient.post('resetAIQuestions', { studentId: studentLink, type: typeStr });
+          const res = await ApiClient.post('resetAIQuestions', { studentId: studentLink, type: typeStr, updatedAnswersText: updatedAnswersText });
           if (res.success) {
             alert('성공적으로 초기화되었습니다.');
             document.getElementById('modal-interview-practice').classList.remove('open');
