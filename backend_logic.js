@@ -131,6 +131,10 @@ async function generateAIChecklist(studentLink, qNum, statementText) {
 - CHARACTER: '구체적 상황', '본인의 직접 행동', '행동 및 태도 변화'
 - DIVERSITY_BOOK: '관점의 비교·대조', '진로/학업 영향', '해결 방안 구체성'
 
+[결격 사유(exclusions) 판별 기준]
+- '교내 대회' 및 '교내 활동'은 결격 사유가 아니므로 절대 위반(found: true)으로 처리하지 마세요.
+- 오직 '외부 수상 실적', '영재교육원 수료 여부', '부모 및 친인척의 사회/경제적 지위'를 명시적으로 언급한 경우에만 exclusions의 found를 true로 반환하고 detail에 사유를 적으세요.
+
 다른 설명이나 마크다운 백틱(\`\`\`)은 절대 포함하지 말고, 아래 JSON 구조로만 응답하세요:
 {
   "exclusions": { "found": false, "detail": "위반 문장 발견시 작성" },
