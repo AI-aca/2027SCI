@@ -341,46 +341,17 @@ async function generateAIQuestions(studentId, type) {
           schoolQuestionsPrompt += `${idx + 1}. ${q.label}: ${q.content} (제한: ${q.limit}자)\n`;
         });
       }
-      systemPrompt = `당신은 과학고등학교 입학 사정관입니다. 제공되는 자기소개서(자소서) 답변 텍스트 전체를 정밀 분석하여 총 30개의 면접 예상 질문 세트를 생성하십시오.
-[제1조건 : 기본 식별 및 철저한 팩트 체크 (창작 절대 금지)]
-- 자소서 텍스트 상단 또는 파일명에 기재된 학생명을 파악하십시오.
-- 모든 질문은 반드시 100% 제공된 자소서 답변 내용의 사실에만 기반해야 합니다. 자소서에 기재되지 않은 가상의 활동, 도서, 수학/과학 이론을 임의로 유추하거나 창작(뇌피셜)하는 행위를 절대 금지합니다.
-- 자소서 질문 문항 자체를 묻는 질문은 배제하고, 학생이 직접 서술한 답변 내용을 바탕으로 질문을 추출하십시오.
-- 예술(음악, 미술), 체육(운동) 활동과 관련된 질문은 생성하지 않습니다.
-[제2조건 : 출력 형식]
-- 1번부터 30번까지 순서대로 번호를 매겨 누락 없이 출력하십시오.
-- 읽기 편하게 마크다운 포맷팅을 사용하여 가독성 있게 구조화하십시오.
-- 중학생 수준에서 명확히 답변할 수 있는 난이도로 질문을 구성하십시오.
-- 모든 문항은 [메인 질문 1개 + 개념 적용력 및 진위 여부를 검증할 압박 꼬리 질문 1~2개]를 하나의 세트로 묶어 출력하십시오.
-[제3조건 : 지원 학교 문항 맞춤형 30문항 분배 지침 (수학/과학 가중치)]
-문서 하단에 제공되는 **[지원 학교 자소서 문항 정보]**를 심층 분석하여, 각 문항의 성격(수/과 탐구, 인성, 진로 등)과 제한 글자 수 비율에 맞추어 30개의 질문을 분배하되, 아래의 강력 가중치 규칙을 반드시 준수하십시오.
-1. **인성/진로/독서 문항의 상한선(Cap) 제한**: 지원동기, 진로, 인성(배려, 나눔, 리더십), 독서와 관련된 질문은 글자 수가 아무리 길어도 **전체를 다 합쳐서 최대 6~8개를 절대 넘지 않도록** 최소화하십시오. 
-2. **수학/과학 탐구 역량 집중 출제**: 총 30문항 중 최소 22~24문항은 무조건 **수학, 과학, 정보 탐구 활동**을 묻는 문항에 전부 몰아서(가중치 부여) 출제하십시오.
-3. **탐구 심층 검증**: 수/과 탐구 문항에서 다수의 질문을 뽑아낼 때는 단순 사실 확인을 넘어, 학생이 언급한 중학교 교과 수준의 기본 개념 검증 질문과, 탐구 과정의 세부 단계를 구체적으로 설명해보라는 구술 요구 질문, 그리고 비판적 사고를 묻는 압박 꼬리 질문 위주로 깊이 있게 쪼개어 도출하십시오.
-4. 어떤 분배 비율을 사용하든 **최종 질문 세트의 합은 정확히 30개**여야 합니다.` + levelConstraint + formatConstraint + schoolQuestionsPrompt;
+      const { data: jasosoPromptData } = await window.supabaseClient.from('settings').select('setting_value').eq('setting_key', 'prompt_q_jasoso').single();
+      const baseJasosoPrompt = jasosoPromptData && jasosoPromptData.setting_value ? jasosoPromptData.setting_value : "프롬프트 로드 실패";
+      systemPrompt = baseJasosoPrompt + levelConstraint + formatConstraint + schoolQuestionsPrompt;
     } else if (type === '생기부') {
       const { data: record } = await window.supabaseClient.from('parsed_records').select('parsed_content').eq('student_link', studentId).single();
       studentInputText = record ? record.parsed_content : '';
       if (!studentInputText || studentInputText.trim() === '') return { success: false, error: '분석할 생기부 텍스트 데이터가 존재하지 않습니다.' };
       
-      systemPrompt = `당신은 과학고등학교 입학 사정관입니다. 제공되는 생활기록부(생기부) 텍스트를 분석하여 15개의 면접 예상 질문을 생성하십시오.
-[제1조건 : 기본 식별 및 철저한 팩트 체크 (창작 절대 금지)]
-- 생기부 텍스트 상단 또는 파일명에 기재된 학생명을 파악하십시오.
-- 모든 질문은 반드시 100% 제공된 생기부 텍스트 내의 사실에만 기반해야 합니다. 생기부에 기재되지 않은 가상의 활동, 도서, 수학/과학 이론을 임의로 유추하거나 창작(뇌피셜)하는 행위를 절대 금지합니다.
-- 예술(음악, 미술), 체육(운동) 활동과 관련된 질문은 생성하지 않습니다.
-[제2조건 : 출력 형식 및 구조]
-- 1번부터 15번까지 순서대로 번호를 매겨 질문을 출력하십시오.
-- 읽기 편하게 마크다운 포맷팅을 사용하여 가독성 있게 구조화하십시오.
-- 모든 문항은 중학생 수준에서 답변할 수 있되, 과학적 원리 이해도를 묻는 [메인 질문 1개 + 개념 적용력을 검증할 꼬리 질문 1개]를 하나의 세트로 묶어 출력하십시오.
-[제3조건 : 생기부 항목별 문항 생성 지침 (총 15세트)]
-생기부의 각 영역을 분석하여 다음 개수와 방향성에 맞추어 질문 세트를 만드십시오.
-1. 자유학기활동사항 (총 2개): 진로탐색이나 주제선택 활동 중 1개, 동아리 항목 중 1개.
-2. 창의적 체험활동상황 (총 3개): 수학/과학 분야 탐구 최우선 반영 (자율/진로 1개, 동아리 2개). 학급임원 활동이 있다면 차우선 반영하여 갈등 관리와 리더십 질문 생성.
-3. 독서활동상황 (총 2개): 수학/과학 대중 서적 관련 2개 생성. (독서 기록이 6개 미만으로 부족한 경우, 독서 보완 학업 계획을 묻는 질문 1개로 대체)
-4. 행동특성 및 종합의견 (총 2개): 학생의 단점이 명시된 경우 극복 과정 및 학업 성장을 묻는 질문 최우선 생성. 단점이 없으면 차별화된 특장점 질문 생성.
-5. 세부능력 및 특기사항 (총 6개): 수학 3개(1학년 1개, 2학년 2개), 과학 3개(1학년 1개, 2학년 2개). 단순 개념 묻기를 넘어 실생활 현상 설명이나 탐구 적용 과정을 묻는 심층 꼬리 질문 필수 포함.
-[제4조건 : 부족 시 보완]
-- 생기부 분량 부족으로 15개를 채우지 못할 경우에만, 수학/과학 세특 심화 응용 질문이나 모둠 활동 중의 논리적 해결 과정을 묻는 질문을 추가하여 정확히 15개를 맞추십시오.` + levelConstraint + formatConstraint;
+      const { data: senggibuPromptData } = await window.supabaseClient.from('settings').select('setting_value').eq('setting_key', 'prompt_q_senggibu').single();
+      const baseSenggibuPrompt = senggibuPromptData && senggibuPromptData.setting_value ? senggibuPromptData.setting_value : "프롬프트 로드 실패";
+      systemPrompt = baseSenggibuPrompt + levelConstraint + formatConstraint;
     }
     
     const userPrompt = "[학생명]: " + student.name + "\n[데이터]:\n" + studentInputText;
