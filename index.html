@@ -10,7 +10,9 @@
   <!-- Supabase 라이브러리 및 PDF.js 캔버스 뷰어 추가 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="backend_logic.js?v=20260819_01"></script>
+  <script>
+    document.write('<script src="backend_logic.js?v=' + new Date().getTime() + '"><\\/script>');
+  </script>
   <style>
     .pulse-dot {
       display: inline-block;
@@ -673,7 +675,9 @@
   </div>
   -->
 
-  <!-- script.js 프론트엔드 액션 제어 스크립트 연결 -->
-  <script src="script.js?v=20260819_01"></script>
+  <!-- script.js 프론트엔드 액션 제어 스크립트 연결 (캐시 원천 차단) -->
+  <script>
+    document.write('<script src="script.js?v=' + new Date().getTime() + '"><\\/script>');
+  </script>
 </body>
 </html>
