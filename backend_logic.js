@@ -622,6 +622,23 @@ async function evaluateStudentRecord(studentId, recordText) {
       finalParsedData.overallReport = "";
     }
 
+    // [환각 원천 차단 방어막] 국/영/사/도 등 다른 주요 과목에서 특정 학기 '누락'이 감지되었다면,
+    // AI가 세특의 '2학기' 텍스트를 보고 수학/과학에 'A'라고 거짓말을 지어낸 환각 데이터를 물리적으로 분쇄.
+    const crossDrops = finalParsedData.gradeDropsExtracted || { korEng: [], socHisInfo: [], moralTech: [] };
+    const allDropsStr = [...(crossDrops.korEng||[]), ...(crossDrops.socHisInfo||[]), ...(crossDrops.moralTech||[])].join(' ');
+    ['1-1', '1-2', '2-1', '2-2', '3-1', '3-2'].forEach(term => {
+      if (allDropsStr.includes(`${term}학기 누락`) || allDropsStr.includes(`${term} 누락`)) {
+        if (finalParsedData.mathGrades) {
+          finalParsedData.mathGrades = finalParsedData.mathGrades.filter(g => !String(g).includes(term));
+          finalParsedData.mathGrades.push(`${term}학기 누락`);
+        }
+        if (finalParsedData.sciGrades) {
+          finalParsedData.sciGrades = finalParsedData.sciGrades.filter(g => !String(g).includes(term));
+          finalParsedData.sciGrades.push(`${term}학기 누락`);
+        }
+      }
+    });
+
     const evaluation = calculateRecordScore(finalParsedData);
     const totalScore = evaluation.totalScore;
     const { area1, area2, area3 } = evaluation;
