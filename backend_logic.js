@@ -390,10 +390,10 @@ async function generateAIQuestions(studentId, type) {
     
     if (type === '자소서') {
       updateObj.statement_questions_json = questionText;
-      updateObj.base_version = '자소서 최신버전';
+      updateObj.base_version_ps = '자소서 최신버전';
     } else {
       updateObj.record_questions_json = questionText;
-      updateObj.base_version = '생기부 분석 기준';
+      updateObj.base_version_record = '생기부 분석 기준';
     }
     
     let questErr;
@@ -407,7 +407,10 @@ async function generateAIQuestions(studentId, type) {
     if (questErr) throw new Error('interview_practice DB 저장 실패: ' + questErr.message);
     
     const timeStr = new Date().toISOString(); 
-    await window.supabaseClient.from('students').update({ expected_questions_ai: type === '자소서' ? '자소서' + timeStr : '생기부' + timeStr }).eq('student_link', studentId);
+    const studentUpdateObj = type === '자소서' 
+      ? { expected_questions_ai_ps: '자소서' + timeStr } 
+      : { expected_questions_ai_record: '생기부' + timeStr };
+    await window.supabaseClient.from('students').update(studentUpdateObj).eq('student_link', studentId);
     
     return { success: true, questions: questionText };
   } catch (err) {
@@ -1380,7 +1383,7 @@ async function getStudentsList() {
           studentLink: s.student_link || s.id || '',
           psStatus: s.cover_letter_status || '',
           psFeedback: s.cover_letter_feedback_ai || '',
-          questions: s.expected_questions_ai || '',
+          questions: (s.expected_questions_ai_ps || '') + '|' + (s.expected_questions_ai_record || '') || (s.expected_questions_ai || ''),
           studentAnswers: practiceMap[s.student_link || s.id] || '',
           isParsed: parsedSet.has(s.student_link || s.id),
           passGifted: (s.result_gifted === '합' ? '합' : '-'),
@@ -1979,6 +1982,39 @@ async function uploadGeneralPdf(payload) {
   }
 }
 
+async function resetAIQuestions(payload) {
+  try {
+    const { studentId, type } = payload;
+    const { data: existingPract } = await window.supabaseClient.from('interview_practice').select('*').eq('student_link', studentId).maybeSingle();
+    
+    if (existingPract && existingPract.id) {
+      let updateObj = {};
+      if (type === '자소서') {
+        updateObj.statement_questions_json = '';
+        updateObj.base_version_ps = '';
+      } else {
+        updateObj.record_questions_json = '';
+        updateObj.base_version_record = '';
+      }
+      const res = await window.supabaseClient.from('interview_practice').update(updateObj).eq('id', existingPract.id);
+      if (res.error) throw new Error('초기화 DB 갱신 실패: ' + res.error.message);
+    }
+    
+    // students 상태 컬럼도 초기화
+    let studentUpdateObj = {};
+    if (type === '자소서') {
+      studentUpdateObj.expected_questions_ai_ps = '';
+    } else {
+      studentUpdateObj.expected_questions_ai_record = '';
+    }
+    await window.supabaseClient.from('students').update(studentUpdateObj).eq('student_link', studentId);
+    
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.toString() };
+  }
+}
+
 // --- 전역(window) 객체 명시적 바인딩 ---
 
 window.verifyPassword = verifyPassword;
@@ -1991,6 +2027,7 @@ window.submitPersonalStatement = submitPersonalStatement;
 window.unlockPersonalStatement = unlockPersonalStatement;
 window.getScoreDetailsBasis = getScoreDetailsBasis;
 window.getAIQuestions = getAIQuestions;
+window.resetAIQuestions = resetAIQuestions;
 window.saveStudentAnswers = saveStudentAnswers;
 window.registerStudent = registerStudent;
 window.updateStudent = updateStudent;

@@ -1628,6 +1628,35 @@ async function openInterviewPractice(studentLink, mode) {
     p.textContent = `아직 생성된 ${isPsMode ? '자소서' : '생기부'} 기반 예상 질문이 없습니다.`;
     qList.appendChild(p);
   } else {
+    if (CURRENT_ROLE === '관리자') {
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'btn-action';
+      resetBtn.style.width = '100%';
+      resetBtn.style.marginBottom = '15px';
+      resetBtn.style.backgroundColor = '#dc3545';
+      resetBtn.style.color = '#fff';
+      resetBtn.innerHTML = `<i class="fa-solid fa-trash"></i> ${isPsMode ? '자소서' : '생기부'} 예상질문 전체 초기화`;
+      resetBtn.onclick = async () => {
+        if (!confirm(`정말 해당 학생의 ${isPsMode ? '자소서' : '생기부'} 예상질문을 모두 삭제하시겠습니까? (이 작업은 되돌릴 수 없습니다)`)) return;
+        if (!confirm(`경고: 질문을 삭제하면 재생성 전까지 '미생성' 상태로 되돌아갑니다. 최종 삭제하시겠습니까?`)) return;
+        
+        try {
+          const typeStr = isPsMode ? '자소서' : '생기부';
+          const res = await ApiClient.post('resetAIQuestions', { studentId: studentLink, type: typeStr });
+          if (res.success) {
+            alert('성공적으로 초기화되었습니다.');
+            document.getElementById('modal-interview-practice').style.display = 'none';
+            await loadStudentsData();
+          } else {
+            alert('초기화 실패: ' + (res.error || '알 수 없는 오류'));
+          }
+        } catch (e) {
+          alert('오류 발생: ' + e.toString());
+        }
+      };
+      qList.appendChild(resetBtn);
+    }
+
     let answersObj = {};
     try {
       answersObj = JSON.parse(student.studentAnswers || '{}');
