@@ -634,8 +634,19 @@ async function evaluateStudentRecord(studentId, recordText) {
     const sName = student.student_name || student.name || '학생';
     const targetSchoolName = student.target_school || student.targetSchool || '';
     
+    const dedupeGrades = (arr) => [...new Set(arr || [])];
+    const mathGradesText = dedupeGrades(finalParsedData.mathGrades).join(' ');
+    const sciGradesText = dedupeGrades(finalParsedData.sciGrades).join(' ');
+    const expectedTerms = ['2-1', '2-2', '3-1'];
+    let isMissing = false;
+    expectedTerms.forEach(term => {
+      if (!mathGradesText.includes(term) || !sciGradesText.includes(term)) isMissing = true;
+    });
+    const warningMsg = isMissing ? `> <div style="background-color: #ffe6e6; border: 1px solid #ffcccc; color: red; font-weight: bold; padding: 10px; border-radius: 4px; margin-top: 10px;">🚨 생기부에 내용이 누락된 학기가 있어, 해당 학기 성적을 만점(ALL A)으로 반영한 점수입니다.</div>\n\n` : ``;
+
     const scoreHeader = `# 📄 ${sName} 학생 과학고 입학 대비 생기부 정밀 평가 보고서\n\n` +
                   `> ℹ️ **[평가 기준 안내]** 3학년의 창의적 체험활동, 세부능력 및 특기사항, 행동특성 및 종합의견은 원서 제출 기간 전에 모두 파악할 수 없기에 미반영된 상태로 분석 및 산정된 점수이며, 지원 학교 적합도 역시 이 기준을 반영하였습니다.\n\n` +
+                  warningMsg +
                         `### 🎯 영역별 채점 결과 요약\n` +
                         `* **학업역량 (210점 만점)**: ${area1} 점\n` +
                         `* **진로적합성 (75점 만점)**: ${area2} 점\n` +
@@ -698,8 +709,8 @@ async function evaluateStudentRecord(studentId, recordText) {
       console.error('record_basis DB 저장 오류:', basisErr);
       throw new Error('record_basis DB 저장 실패: ' + basisErr.message);
     }
-    
-    const { error: studentScoreErr } = await window.supabaseClient.from('students').update({ record_score_ai: totalScore }).eq('id', student.id);
+    const displayScore = isMissing ? `${totalScore} 🚨` : String(totalScore);
+    const { error: studentScoreErr } = await window.supabaseClient.from('students').update({ record_score_ai: displayScore }).eq('id', student.id);
     if (studentScoreErr) console.error('students score update error:', studentScoreErr);
 
     return { success: true, score: totalScore, analysisReport: analysisText, scoreDetails: finalParsedData };
@@ -894,9 +905,6 @@ function calculateRecordScore(data) {
     else if (String(g).includes('C')) mathPenalty += 20;
     else if (String(g).includes('D') || String(g).includes('E')) mathPenalty += 25;
   });
-  if (mathGrades.length < 3) {
-    mathPenalty += (3 - mathGrades.length) * 25;
-  }
   scores.area1_item1 = Math.max(0, 40 - mathPenalty);
 
   const sciGrades = dedupe(data.sciGrades);
@@ -906,9 +914,6 @@ function calculateRecordScore(data) {
     else if (String(g).includes('C')) sciPenalty += 20;
     else if (String(g).includes('D') || String(g).includes('E')) sciPenalty += 25;
   });
-  if (sciGrades.length < 3) {
-    sciPenalty += (3 - sciGrades.length) * 25;
-  }
   scores.area1_item2 = Math.max(0, 40 - sciPenalty);
 
   const drops = data.gradeDropsExtracted || { korEng: [], socHisInfo: [], moralTech: [] };
@@ -916,15 +921,13 @@ function calculateRecordScore(data) {
   const calcDrops = (arr) => {
     let totalDrops = 0;
     dedupe(arr).forEach(str => {
+      if (String(str).includes('누락')) return;
       const match = String(str).match(/[BCDE]/);
       if (match) {
         if (match[0] === 'B') totalDrops += 1;
         else if (match[0] === 'C') totalDrops += 2;
         else if (match[0] === 'D') totalDrops += 3;
         else if (match[0] === 'E') totalDrops += 4;
-      }
-      if (String(str).includes('누락')) {
-        totalDrops += 2;
       }
     });
     return totalDrops;
@@ -1151,7 +1154,12 @@ function generateScoreCardsData(d, scores, role = '관리자') {
     if (obj.korEng) list.push(...obj.korEng);
     if (obj.socHisInfo) list.push(...obj.socHisInfo);
     if (obj.moralTech) list.push(...obj.moralTech);
-    return [...new Set(list)];
+    return [...new Set(list)].map(str => {
+      if (String(str).includes('누락')) {
+        return String(str).replace(/누락/g, '미산출 (만점 반영)');
+      }
+      return str;
+    });
   };
 
   const specs = [
@@ -1160,7 +1168,7 @@ function generateScoreCardsData(d, scores, role = '관리자') {
         const expected = ['2-1', '2-2', '3-1'];
         let textJoined = arr.join(' ');
         expected.forEach(term => {
-          if (!textJoined.includes(term)) arr.push(`${term}학기 성적 누락 (-25점)`);
+          if (!textJoined.includes(term)) arr.push(`${term}학기 미산출 (만점 반영)`);
         });
         return arr;
     } },
@@ -1169,7 +1177,7 @@ function generateScoreCardsData(d, scores, role = '관리자') {
         const expected = ['2-1', '2-2', '3-1'];
         let textJoined = arr.join(' ');
         expected.forEach(term => {
-          if (!textJoined.includes(term)) arr.push(`${term}학기 성적 누락 (-25점)`);
+          if (!textJoined.includes(term)) arr.push(`${term}학기 미산출 (만점 반영)`);
         });
         return arr;
     } },
