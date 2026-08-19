@@ -1645,7 +1645,7 @@ async function openInterviewPractice(studentLink, mode) {
           const res = await ApiClient.post('resetAIQuestions', { studentId: studentLink, type: typeStr });
           if (res.success) {
             alert('성공적으로 초기화되었습니다.');
-            document.getElementById('modal-interview-practice').style.display = 'none';
+            document.getElementById('modal-interview-practice').classList.remove('open');
             await loadStudentsData();
           } else {
             alert('초기화 실패: ' + (res.error || '알 수 없는 오류'));
