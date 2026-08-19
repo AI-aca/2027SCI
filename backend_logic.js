@@ -1996,6 +1996,12 @@ async function resetAIQuestions(payload) {
         updateObj.record_questions_json = '';
         updateObj.base_version_record = '';
       }
+      
+      // 프론트엔드에서 특정 모드의 답변만 제거하여 보낸 새 answers_json 반영
+      if (payload.updatedAnswersText !== undefined) {
+        updateObj.answers_json = payload.updatedAnswersText;
+      }
+
       const res = await window.supabaseClient.from('interview_practice').update(updateObj).eq('id', existingPract.id);
       if (res.error) throw new Error('초기화 DB 갱신 실패: ' + res.error.message);
     }
