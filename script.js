@@ -637,9 +637,13 @@ function renderMainTable() {
         }
       }
       else if (col.key === 'recordScoreOnly') {
-        const val = student.recordScore;
+        const val = String(student.recordScore || '');
         if (val) {
-          td.innerHTML = `<strong>${val} 점</strong>`;
+          if (val.includes('🚨')) {
+            td.innerHTML = `<strong>${val.replace(' 🚨', '')} 점 🚨</strong>`;
+          } else {
+            td.innerHTML = `<strong>${val} 점</strong>`;
+          }
         } else {
           td.innerHTML = `<span class="text-muted">-</span>`;
         }
