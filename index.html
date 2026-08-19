@@ -493,8 +493,11 @@
             
             <!-- AI 피드백 탭 (학생 노출 원천 제외) -->
             <div class="tab-pane-content" id="tab-content-ai" style="flex: 1; overflow-y: auto;">
-              <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-                <span class="desc-text" style="font-size: 14px; color: var(--text-muted);">AI가 분석한 자소서 피드백입니다.</span>
+              <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span class="desc-text" style="font-size: 14px; color: var(--text-muted);">AI가 분석한 자소서 피드백입니다.</span>
+                  <span id="ai-feedback-date-text" style="font-size: 11px; color: #94a3b8; font-weight: normal; display: none;"></span>
+                </div>
                 <div style="display: flex; gap: 5px;">
                   <button class="btn-action" id="btn-reset-ai-feedback" style="background-color: #dc3545; padding: 4px 10px; font-size: 14px;"><i class="fa-solid fa-trash-can"></i> 초기화</button>
                   <button class="btn-action" id="btn-generate-ai-feedback" style="background-color: var(--color-primary); padding: 4px 10px; font-size: 14px;"><i class="fa-solid fa-robot"></i> AI 도움받기</button>
