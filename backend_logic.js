@@ -457,6 +457,7 @@ async function evaluateStudentRecord(studentId, recordText) {
       window.supabaseClient.from('settings').select('setting_value').eq('setting_key', 'prompt_evaluate_area2').single(),
       window.supabaseClient.from('settings').select('setting_value').eq('setting_key', 'prompt_evaluate_area3').single()
     ]);
+    const commonSystemInstruction = dCommon ? dCommon.setting_value : '';
     const hallucinationLockRule = `
 [🚨 파싱 절대 규칙: 성적 위조 및 환각 생성 엄격 금지]
 1. mathGrades, sciGrades 등 교과 성적(등급) 데이터를 추출할 때, 반드시 생기부 본문의 <6. 교과학습발달상황> 표(Table) 또는 하단 <성적 통지표> 영역에 "A, B, C, D, E, P" 등 등급 문자가 명시적으로 기재된 팩트 데이터만 추출할 것.
