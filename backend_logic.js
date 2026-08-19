@@ -1667,7 +1667,7 @@ window.deletePersonalStatementSnapshot = async function(recordId) {
 async function submitPersonalStatement(payload) {
   try {
     const studentId = payload.studentId || payload;
-    await window.supabaseClient.from('students').update({ cover_letter_status: '제출완료' }).eq('student_link', studentId);
+    await window.supabaseClient.from('students').update({ cover_letter_status: '최종제출' }).eq('student_link', studentId);
     return { success: true };
   } catch (err) {
     return { success: false, error: err.toString() };

@@ -80,7 +80,7 @@ window.updatePassStatusFrontend = async function(studentLink, passType, passValu
     if (!result.success) {
       alert('합불 상태 저장 실패: ' + result.error);
     } else {
-      const student = STUDENTS_LIST.find(s => s.studentLink === studentLink);
+      const student = STUDENTS_LIST.find(s => String(s.studentLink) === String(studentLink));
       if (student) {
         student[passType] = passValue;
         if (passType === 'passGifted') {
@@ -864,7 +864,7 @@ function renderMainTable() {
  * 테이블 내 행 관리 버튼 (수정 모달 강제 오픈)
  */
 function openEditStudent(studentLink) {
-  const student = STUDENTS_LIST.find(s => s.studentLink === studentLink);
+  const student = STUDENTS_LIST.find(s => String(s.studentLink) === String(studentLink));
   if (!student) return;
   
   isEditMode = true;
@@ -942,7 +942,7 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual', ta
     await loadSettingsForm();
   }
   
-  const student = STUDENTS_LIST.find(s => s.studentLink === studentLink);
+  const student = STUDENTS_LIST.find(s => String(s.studentLink) === String(studentLink));
   if (!student) return;
   
   document.getElementById('ps-modal-title').textContent = `${student.name} 학생의 자기소개서 편집 및 피드백`;
@@ -1108,7 +1108,12 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual', ta
     });
     
     // 쓰레기 데이터 원천 필터링 (과거 버그로 생성된 1, 2, '최신' 등 껍데기 유령 데이터 차단)
-    historyData.current = historyData.current.filter(c => !(c.version_label === '최신' || !isNaN(c.qNum)));
+    const validLabels = questions.map(q => q.label.trim());
+    historyData.current = historyData.current.filter(c => {
+      if (c.version_label === '최신') return false;
+      if (!isNaN(c.qNum)) return validLabels.includes(String(c.qNum));
+      return true;
+    });
     
     // 글로벌에 데이터 홀드
     window.PS_CURRENT_HISTORY = historyData;
@@ -1355,7 +1360,7 @@ function bindPersonalStatementToSelector(qNum) {
   const details = qData && qData.details ? qData.details : [];
 
   const isLocked = window.ACTIVE_PS_STUDENT_STATUS === '최종제출'; // Need locked status? Actually it's set on modal open, let's just check student.psStatus
-  const studentInfo = STUDENTS_LIST.find(s => s.studentLink === ACTIVE_PS_STUDENT);
+  const studentInfo = STUDENTS_LIST.find(s => String(s.studentLink) === String(ACTIVE_PS_STUDENT));
   const locked = studentInfo && studentInfo.psStatus === '최종제출';
 
   if (details.length > 0) {
@@ -1553,7 +1558,7 @@ let ACTIVE_INTERVIEW_MODE = "ps";
 async function openInterviewPractice(studentLink, mode) {
   ACTIVE_INTERVIEW_STUDENT = studentLink;
   ACTIVE_INTERVIEW_MODE = mode || "ps";
-  const student = STUDENTS_LIST.find(s => s.studentLink === studentLink);
+  const student = STUDENTS_LIST.find(s => String(s.studentLink) === String(studentLink));
   if (!student) return;
   
   const isPsMode = ACTIVE_INTERVIEW_MODE === "ps";
@@ -2109,7 +2114,15 @@ function bindEventHandlers() {
   document.getElementById('btn-close-ps-editor-modal').onclick = () => { if(!isPsDirty || confirm('저장하지 않은 내용은 모두 사라집니다. 정말 창을 닫으시겠습니까?')) { isPsDirty = false; document.getElementById('modal-ps-editor').classList.remove('open'); } }
       document.getElementById('btn-close-ps-editor-modal').onclick = () => { if(!isPsDirty || confirm('저장하지 않은 내용은 모두 사라집니다. 정말 창을 닫으시겠습니까?')) { isPsDirty = false; document.getElementById('modal-ps-editor').classList.remove('open'); } }
   document.getElementById('btn-close-interview-modal').onclick = () => { if(confirm('저장하지 않은 내용은 모두 사라집니다. 정말 창을 닫으시겠습니까?')) { document.getElementById('modal-interview-practice').classList.remove('open'); } }
-  document.getElementById('btn-close-interview-practice-modal').onclick = () => { if(confirm('저장하지 않은 내용은 모두 사라집니다. 정말 창을 닫으시겠습니까?')) { document.getElementById('modal-interview-practice').classList.remove('open'); } }
+  document.getElementById('btn-close-interview-practice-modal').onclick = () => {
+    if (CURRENT_ROLE !== '학생') {
+      document.getElementById('modal-interview-practice').classList.remove('open');
+      return;
+    }
+    if (confirm('저장하지 않은 내용은 모두 사라집니다. 정말 창을 닫으시겠습니까?')) {
+      document.getElementById('modal-interview-practice').classList.remove('open');
+    }
+  };
   document.getElementById('btn-close-score-details-modal').onclick = () => { document.getElementById('modal-score-details').classList.remove('open'); }
   document.getElementById('btn-close-score-details-bottom').onclick = () => { document.getElementById('modal-score-details').classList.remove('open'); }
   const closePdfModal = () => {
@@ -2500,7 +2513,7 @@ function bindEventHandlers() {
     if (!ACTIVE_PS_STUDENT) return;
     
     // 💡 작성 안 된 문항 검증 로직 시작
-    const student = STUDENTS_LIST.find(s => s.studentLink === ACTIVE_PS_STUDENT);
+    const student = STUDENTS_LIST.find(s => String(s.studentLink) === String(ACTIVE_PS_STUDENT));
     const schoolMap = window.SCHOOL_QUESTIONS_MAP || [];
     const matchedSchool = schoolMap.find(s => s.name === (student.targetSchool || ''));
     const totalQuestionsCount = (matchedSchool && matchedSchool.questions) ? matchedSchool.questions.length : 1;
@@ -3721,7 +3734,7 @@ window.generateChecklist = async function() {
 };
 
 window.openPsViewerModal = async function(studentLink) {
-  const student = STUDENTS_LIST.find(s => s.studentLink === studentLink);
+  const student = STUDENTS_LIST.find(s => String(s.studentLink) === String(studentLink));
   if (!student) return;
   
   const titleEl = document.getElementById('ps-viewer-modal-title');
