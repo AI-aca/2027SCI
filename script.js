@@ -2516,31 +2516,34 @@ function bindEventHandlers() {
     const student = STUDENTS_LIST.find(s => String(s.studentLink) === String(ACTIVE_PS_STUDENT));
     const schoolMap = window.SCHOOL_QUESTIONS_MAP || [];
     const matchedSchool = schoolMap.find(s => s.name === (student.targetSchool || ''));
-    const totalQuestionsCount = (matchedSchool && matchedSchool.questions) ? matchedSchool.questions.length : 1;
     
-    const currentQNum = document.getElementById('ps-question-selector').value || '1';
+    if (!matchedSchool || !matchedSchool.questions || matchedSchool.questions.length === 0) {
+      alert('🚨 학교 문항이 설정되지 않았습니다. 제출할 수 없습니다.');
+      return;
+    }
+
+    const currentQNum = document.getElementById('ps-question-selector').value || '';
     const currentTextAreaVal = window.getCurrentPsText ? window.getCurrentPsText(false) : document.getElementById('ps-content-textarea').value;
-    
     const hData = window.PS_CURRENT_HISTORY || { current: [] };
     
-    let unwrittenQuestionNum = -1;
-    for (let i = 1; i <= totalQuestionsCount; i++) {
+    let unwrittenQuestionLabel = null;
+    for (const q of matchedSchool.questions) {
+      const label = q.label.trim();
       let qText = '';
-      if (String(i) === String(currentQNum)) {
-        qText = currentTextAreaVal; // 현재 편집 중인 내용은 텍스트에리어 우선 참조
+      if (label === currentQNum) {
+        qText = currentTextAreaVal;
       } else {
-        const savedData = hData.current.find(c => c.qNum == i);
+        const savedData = hData.current.find(c => String(c.qNum) === label);
         qText = savedData ? (savedData.text || '').trim() : '';
       }
-      
       if (qText.replace(/\[상세분할\]/g, '').trim() === '') {
-        unwrittenQuestionNum = i;
+        unwrittenQuestionLabel = label;
         break;
       }
     }
     
-    if (unwrittenQuestionNum !== -1) {
-      alert(`🚨 제출 거부: 문항 ${unwrittenQuestionNum} 내용이 작성되지 않았습니다. 모든 문항을 작성해야 최종 제출이 가능합니다.`);
+    if (unwrittenQuestionLabel) {
+      alert(`🚨 제출 거부: [${unwrittenQuestionLabel}] 내용이 작성되지 않았습니다. 모든 문항을 작성해야 최종 제출이 가능합니다.`);
       return;
     }
     // 💡 작성 안 된 문항 검증 로직 끝
