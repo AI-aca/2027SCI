@@ -1506,13 +1506,22 @@ function bindPersonalStatementToSelector(qNum) {
   
   // AI 도움받기 바인딩 (해당 문항의 최신 내역 로드)
   const aiContainer = document.getElementById('ai-feedback-container');
+  const aiDateEl = document.getElementById('ai-feedback-date-text');
   if (aiContainer) {
     const aiLog = hData.aiHistory || [];
     const currentType = '문항' + qNum + '_도움받기';
     const targetAILogs = aiLog.filter(log => log.type === currentType);
     if (targetAILogs.length > 0) {
-      aiContainer.innerHTML = parseMarkdown(targetAILogs[targetAILogs.length - 1].feedback);
+      const lastLog = targetAILogs[targetAILogs.length - 1];
+      aiContainer.innerHTML = parseMarkdown(lastLog.feedback);
+      if (aiDateEl && lastLog.timestamp) {
+        const _d = new Date(lastLog.timestamp);
+        const fmtDate = `${String(_d.getFullYear()).slice(-2)}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')} ${String(_d.getHours()).padStart(2,'0')}:${String(_d.getMinutes()).padStart(2,'0')}`;
+        aiDateEl.textContent = `(기준일: ${fmtDate})`;
+        aiDateEl.style.display = 'block';
+      }
     } else {
+      if (aiDateEl) aiDateEl.style.display = 'none';
       aiContainer.innerHTML = `<div style="text-align:center; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-muted); word-break: keep-all; padding: 10px;">
                                  아직 생성된 AI 피드백이 없습니다.
                                </div>`;
