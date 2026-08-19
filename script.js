@@ -781,7 +781,6 @@ function renderMainTable() {
            let statusIcon = 'fa-circle-dot';
            if (forcedVal === '합') { statusColor = '#10b981'; statusIcon = 'fa-circle-check'; }
            else if (forcedVal === '불') { statusColor = '#ef4444'; statusIcon = 'fa-circle-xmark'; }
-           else if (forcedVal === '-') { statusColor = '#94a3b8'; statusIcon = 'fa-minus'; }
            
            let optionsHtml = '';
            if (col.key === 'passGifted') {
