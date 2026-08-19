@@ -1202,9 +1202,18 @@ function switchTab(tabId) {
     const qNum = document.getElementById('ps-question-selector').value;
     const currentType = '문항' + qNum + '_도움받기';
     const targetAILogs = aiLog.filter(log => log.type === currentType);
+    const dateEl = document.getElementById('ai-feedback-date-text');
     if (targetAILogs.length > 0) {
-      aiContainer.innerHTML = parseMarkdown(targetAILogs[targetAILogs.length - 1].feedback); // 최신 AI 피드백
+      const lastLog = targetAILogs[targetAILogs.length - 1];
+      aiContainer.innerHTML = parseMarkdown(lastLog.feedback); // 최신 AI 피드백
+      if (dateEl && lastLog.timestamp) {
+        const _d = new Date(lastLog.timestamp);
+        const fmtDate = `${String(_d.getFullYear()).slice(-2)}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')} ${String(_d.getHours()).padStart(2,'0')}:${String(_d.getMinutes()).padStart(2,'0')}`;
+        dateEl.textContent = `(기준일: ${fmtDate})`;
+        dateEl.style.display = 'block';
+      }
     } else {
+      if (dateEl) dateEl.style.display = 'none';
       aiContainer.innerHTML = `<div style="text-align:center; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-muted); word-break: keep-all; padding: 10px;">
                                  아직 생성된 AI 피드백이 없습니다.
                                </div>`;
