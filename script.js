@@ -171,6 +171,7 @@ function parseMarkdownToHtml(text) {
     .replace(/\*\*(.*?)\*\*/gim, '<strong style="color: #fff;">$1</strong>')
     .replace(/^\* (.*$)/gim, '<li style="margin-left: 20px; margin-bottom: 4px;">$1</li>')
     .replace(/^- (.*$)/gim, '<li style="margin-left: 20px; list-style-type: circle; margin-bottom: 4px;">$1</li>')
+    .replace(/^&gt;\s?🚨\s?\*\*(.*?)\*\*(.*$)/gim, '<div style="background-color: rgba(255, 0, 0, 0.1); border: 1px solid #ff4444; color: #ff6666; font-weight: bold; padding: 12px; border-radius: 6px; margin: 12px 0;">🚨 $1$2</div>')
     .replace(/^&gt;\s?(.*$)/gim, '<div style="border-left: 3px solid var(--color-primary); background: rgba(0,0,0,0.2); margin: 8px 0; padding: 12px; color: var(--text-muted); line-height: 1.5;">$1</div>')
     .replace(/\s*\[종합 총평\]\s*/g, '<br><br>');
     
