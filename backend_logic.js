@@ -642,7 +642,7 @@ async function evaluateStudentRecord(studentId, recordText) {
     expectedTerms.forEach(term => {
       if (!mathGradesText.includes(term) || !sciGradesText.includes(term)) isMissing = true;
     });
-    const warningMsg = isMissing ? `> <div style="background-color: #ffe6e6; border: 1px solid #ffcccc; color: red; font-weight: bold; padding: 10px; border-radius: 4px; margin-top: 10px;">🚨 생기부에 내용이 누락된 학기가 있어, 해당 학기 성적을 만점(ALL A)으로 반영한 점수입니다.</div>\n\n` : ``;
+    const warningMsg = isMissing ? `> 🚨 **[주의] 생기부에 성적이 누락된 학기가 감지되어 해당 학기 성적을 만점(ALL A)으로 반영하여 산출한 점수입니다.**\n\n` : ``;
 
     const scoreHeader = `# 📄 ${sName} 학생 과학고 입학 대비 생기부 정밀 평가 보고서\n\n` +
                   `> ℹ️ **[평가 기준 안내]** 3학년의 창의적 체험활동, 세부능력 및 특기사항, 행동특성 및 종합의견은 원서 제출 기간 전에 모두 파악할 수 없기에 미반영된 상태로 분석 및 산정된 점수이며, 지원 학교 적합도 역시 이 기준을 반영하였습니다.\n\n` +
