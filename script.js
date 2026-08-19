@@ -1882,7 +1882,7 @@ function bindEventHandlers() {
       };
       
       if (CURRENT_MENU === 'record') {
-        document.getElementById('content-title').innerHTML = `${titleMap[CURRENT_MENU] || '생활기록부 채점 현황'} <span style="font-size: 14px; background-color: rgba(255, 0, 0, 0.15); border: 1px solid #ff4444; color: #ff6666; padding: 4px 12px; border-radius: 20px; font-weight: bold; margin-left: 14px; vertical-align: middle; display: inline-block; transform: translateY(-2px);"><i class="fa-solid fa-triangle-exclamation"></i> 🚨 생기부 성적 누락 시 전 학년 만점 처리 적용 중</span>`;
+        document.getElementById('content-title').innerHTML = `${titleMap[CURRENT_MENU] || '생활기록부 채점 현황'} <span style="font-size: 14px; background-color: rgba(255, 0, 0, 0.15); border: 1px solid #ff4444; color: #ff6666; padding: 4px 12px; border-radius: 20px; font-weight: bold; margin-left: 14px; vertical-align: middle; display: inline-block; transform: translateY(-2px);">🚨 표기 : 성적이 누락된 학기를 만점(ALL A)으로 산출한 학생</span>`;
       } else {
         document.getElementById('content-title').textContent = titleMap[CURRENT_MENU] || '초기 화면';
       }
