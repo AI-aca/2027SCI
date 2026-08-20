@@ -755,10 +755,10 @@ function renderMainTable() {
           const percentWidth = percent > 100 ? 100 : percent;
           
           td.innerHTML = `
-            <div style="position: relative; width: 100%; min-width: 120px; height: 22px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
-              <div style="width: ${percentWidth}%; height: 100%; background: linear-gradient(90deg, var(--color-primary-dark), var(--color-primary)); transition: width 0.5s ease;"></div>
+            <div style="position: relative; width: 100%; min-width: 60px; max-width: 100px; height: 22px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); margin: 0 auto;">
+              <div style="width: ${percentWidth}%; height: 100%; background: linear-gradient(90deg, var(--color-primary-hover), var(--color-primary)); transition: width 0.5s ease;"></div>
               <span style="position: absolute; width: 100%; text-align: center; left: 0; top: 0; line-height: 22px; font-size: 11.5px; font-weight: 700; color: #ffffff; text-shadow: 0px 1px 2px rgba(0,0,0,0.8); letter-spacing: 0.5px;">
-                ${totalWritten} / ${totalLimit}자 (${percent}%)
+                ${percent}%
               </span>
             </div>
           `;
