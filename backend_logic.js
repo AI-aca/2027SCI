@@ -195,22 +195,8 @@ async function generateAIFeedback(studentId, qNum, statementText) {
 `;
     const systemPrompt = baseSystemPrompt + formatConstraint;
     
-    // 내용 구조화 (상세분할 태그 치환)
-    let formattedStatement = statementText;
-    if (statementText.includes('[상세분할]') && targetSchoolData && targetSchoolData.questions) {
-      const qData = targetSchoolData.questions[qNum - 1];
-      if (qData && qData.details && qData.details.length > 0) {
-        const parts = statementText.split('[상세분할]');
-        formattedStatement = parts.map((part, idx) => {
-          const title = qData.details[idx] ? qData.details[idx].title : `세부항목 ${idx + 1}`;
-          return `[${title}]:\n${part.trim()}`;
-        }).join('\n\n');
-      } else {
-        formattedStatement = statementText.replace(/\[상세분할\]/g, '\n\n');
-      }
-    } else {
-      formattedStatement = statementText.replace(/\[상세분할\]/g, '\n\n');
-    }
+    // 내용 구조화 (상세분할 태그 → 줄바꿈 변환, 라벨 주입은 프론트엔드에서 완료됨)
+    let formattedStatement = statementText.replace(/\[상세분할\]/g, '\n\n');
     
     let userPrompt = `[학생명]: ${student.name}\n[지원 학교]: ${student.targetSchool}\n`;
     userPrompt += `[문항 ${qNum}번 정보]\n`;

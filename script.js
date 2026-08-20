@@ -1348,7 +1348,16 @@ function bindPersonalStatementToSelector(qNum) {
         const tas = container.querySelectorAll('.dynamic-ps-textarea');
         const vals = Array.from(tas).map(ta => ta.value.trim());
         if (forAi) {
-          return vals.join('\n\n');
+          const wrappers = container.children;
+          const labeled = Array.from(tas).map((ta, idx) => {
+            const labelText = wrappers[idx] ? wrappers[idx].children[0].textContent : '';
+            const val = ta.value.trim();
+            if (labelText) {
+              return '[' + labelText + ']:\n' + (val || '(내용 없음)');
+            }
+            return val;
+          });
+          return labeled.join('\n\n[상세분할]\n\n');
         } else {
           return vals.join('[상세분할]');
         }
