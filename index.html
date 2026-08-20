@@ -326,7 +326,12 @@
   <div class="modal-overlay" id="modal-register">
     <div class="modal-container" style="max-width: 600px;">
       <div class="modal-header">
-        <h3 id="register-modal-title">학생 정보 관리</h3>
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <h3 id="register-modal-title" style="margin: 0;">학생 정보 관리</h3>
+          <label style="font-size: 14px; font-weight: normal; display: flex; align-items: center; gap: 5px; cursor: pointer; color: var(--text-muted);">
+            <input type="checkbox" id="reg-is-reference"> 참고용 학생
+          </label>
+        </div>
         <button class="btn-close" id="btn-close-register-modal">&times;</button>
       </div>
       <div class="modal-body">

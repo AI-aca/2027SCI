@@ -663,6 +663,15 @@ function renderMainTable() {
       td.style.textAlign = 'center';
       const val = student[col.key];
       
+      if (student.isReference) {
+        const blockedKeys = ['passGifted', 'passRound1', 'passRound2', 'passFinal', 'studentLink', 'studentSms', 'psStatus', 'psProgress', 'psViewer', 'interviewRecord', 'interviewPs', 'manage'];
+        if (blockedKeys.includes(col.key)) {
+          td.innerHTML = '<span class="text-muted">-</span>';
+          tr.appendChild(td);
+          return;
+        }
+      }
+      
       // 특별 컬럼 가공
       if (col.key === 'recordView') {
         if (student.recordPdf) {
@@ -977,6 +986,8 @@ function openEditStudent(studentLink) {
   
   document.getElementById('reg-math-teacher').value = student.mathTeacher || '';
   document.getElementById('reg-sci-teacher').value = student.sciTeacher || '';
+  const refCb = document.getElementById('reg-is-reference');
+  if(refCb) refCb.checked = !!student.isReference;
   
   document.getElementById('modal-register').classList.add('open');
 }
@@ -2192,6 +2203,15 @@ function bindEventHandlers() {
       errorMsgEl.style.display = 'block';
     }
   };
+  
+  const refCb = document.getElementById('reg-is-reference');
+  if(refCb) {
+    refCb.addEventListener('change', (e) => {
+      if(e.target.checked) {
+        alert("이 체크박스를 선택하면 참고용 학생으로 등록되며 통계 및 관리 기능이 제한됩니다.");
+      }
+    });
+  }
   
   // 신규 학생 등록 버튼 (사이드바) 로직
   isEditMode = false;
