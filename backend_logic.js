@@ -1327,7 +1327,8 @@ async function getStudentsList() {
           passRound1: s.result_1st || '대기',
           passRound2: s.result_2nd || '대기',
           passFinal: s.result_final || '대기',
-          student_memo: s.student_memo || ''
+          student_memo: s.student_memo || '',
+          isReference: !!s.is_reference
         };
       });
     } catch (err) {
