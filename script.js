@@ -1775,9 +1775,30 @@ async function runAIFeedbackAction() {
   const statementText = window.getCurrentPsText ? window.getCurrentPsText(true) : document.getElementById('ps-content-textarea').value;
   const rawVal = window.getCurrentPsText ? window.getCurrentPsText(false).replace(/\[상세분할\]/g, '').trim() : statementText.trim();
   
-  if (!rawVal || rawVal.length < 10) {
-    alert('작성된 내용이 너무 짧거나 없습니다.');
-    return;
+  let totalLimit = 0;
+  const matchedSchool = window.SCHOOL_QUESTIONS_MAP && window.SCHOOL_QUESTIONS_MAP.find(s => s.name === window.ACTIVE_PS_SCHOOL);
+  if (matchedSchool && matchedSchool.questions) {
+    const qData = matchedSchool.questions.find(q => String(q.label) === String(qNum));
+    if (qData) {
+      if (qData.limit && !isNaN(parseInt(qData.limit))) {
+        totalLimit = parseInt(qData.limit);
+      } else if (qData.details && qData.details.length > 0) {
+        totalLimit = qData.details.reduce((sum, d) => sum + (parseInt(d.limit) || 0), 0);
+      }
+    }
+  }
+  
+  const currentCount = getCharCount(rawVal, window.ACTIVE_PS_SCHOOL);
+  if (totalLimit > 0) {
+    if (currentCount < (totalLimit * 0.6)) {
+      alert('내용이 비었거나 분량이 작아 진행할 수 없습니다.');
+      return;
+    }
+  } else {
+    if (!rawVal || rawVal.length < 10) {
+      alert('작성된 내용이 너무 짧거나 없습니다.');
+      return;
+    }
   }
 
   const container = document.getElementById('ai-feedback-container');
@@ -3766,9 +3787,31 @@ window.generateChecklist = async function() {
   const qNum = document.getElementById('ps-question-selector').value;
   const textVal = window.getCurrentPsText ? window.getCurrentPsText(true) : document.getElementById('ps-content-textarea').value;
   const rawVal = window.getCurrentPsText ? window.getCurrentPsText(false).replace(/\[상세분할\]/g, '').trim() : textVal.trim();
-  if (!rawVal || rawVal === '') {
-    alert('자소서 내용이 비어있습니다.');
-    return;
+  
+  let totalLimit = 0;
+  const matchedSchool = window.SCHOOL_QUESTIONS_MAP && window.SCHOOL_QUESTIONS_MAP.find(s => s.name === window.ACTIVE_PS_SCHOOL);
+  if (matchedSchool && matchedSchool.questions) {
+    const qData = matchedSchool.questions.find(q => String(q.label) === String(qNum));
+    if (qData) {
+      if (qData.limit && !isNaN(parseInt(qData.limit))) {
+        totalLimit = parseInt(qData.limit);
+      } else if (qData.details && qData.details.length > 0) {
+        totalLimit = qData.details.reduce((sum, d) => sum + (parseInt(d.limit) || 0), 0);
+      }
+    }
+  }
+  
+  const currentCount = getCharCount(rawVal, window.ACTIVE_PS_SCHOOL);
+  if (totalLimit > 0) {
+    if (currentCount < (totalLimit * 0.6)) {
+      alert('내용이 비었거나 분량이 작아 진행할 수 없습니다.');
+      return;
+    }
+  } else {
+    if (!rawVal || rawVal === '') {
+      alert('자소서 내용이 비어있습니다.');
+      return;
+    }
   }
   
   if (!confirm(`현재 문항(${qNum}번)에 대한 AI 체크리스트를 생성하시겠습니까?`)) return;
