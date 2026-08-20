@@ -1773,8 +1773,9 @@ async function runAIFeedbackAction() {
   const displayQNum = String(qNum).startsWith('문항') ? String(qNum) : '문항' + qNum;
   if (!confirm(`현재 문항(${displayQNum}번)에 대한 AI 도움받기를 생성하시겠습니까?`)) return;
   const statementText = window.getCurrentPsText ? window.getCurrentPsText(true) : document.getElementById('ps-content-textarea').value;
+  const rawVal = window.getCurrentPsText ? window.getCurrentPsText(false).replace(/\[상세분할\]/g, '').trim() : statementText.trim();
   
-  if (!statementText || statementText.trim().length < 10) {
+  if (!rawVal || rawVal.length < 10) {
     alert('작성된 내용이 너무 짧거나 없습니다.');
     return;
   }
@@ -3764,7 +3765,8 @@ window.generateChecklist = async function() {
   
   const qNum = document.getElementById('ps-question-selector').value;
   const textVal = window.getCurrentPsText ? window.getCurrentPsText(true) : document.getElementById('ps-content-textarea').value;
-  if (!textVal || textVal.trim() === '') {
+  const rawVal = window.getCurrentPsText ? window.getCurrentPsText(false).replace(/\[상세분할\]/g, '').trim() : textVal.trim();
+  if (!rawVal || rawVal === '') {
     alert('자소서 내용이 비어있습니다.');
     return;
   }
