@@ -671,9 +671,13 @@ function renderMainTable() {
       if (student.isReference) {
         const blockedKeys = ['passGifted', 'passRound1', 'passRound2', 'passFinal', 'studentLink', 'studentSms', 'psStatus', 'psProgress', 'psViewer', 'interviewRecord', 'interviewPs', 'manage'];
         if (blockedKeys.includes(col.key)) {
-          td.innerHTML = '<span class="text-muted">-</span>';
-          tr.appendChild(td);
-          return;
+          if (CURRENT_MENU === 'dashboard' && col.key === 'manage') {
+            // 대시보드 메뉴에서는 manage 컬럼(수정 버튼) 예외 허용
+          } else {
+            td.innerHTML = '<span class="text-muted">-</span>';
+            tr.appendChild(td);
+            return;
+          }
         }
       }
       
