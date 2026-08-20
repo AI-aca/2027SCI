@@ -916,7 +916,9 @@ function renderMainTable() {
       }
       else if (col.key === 'name') {
         if (val) {
-          td.innerHTML = `<span style="background-color: rgba(255, 255, 255, 0.12); padding: 4px 10px; border-radius: 4px; font-weight: 600; color: var(--text-main); display: inline-block;">${val}</span>`;
+          const nameBg = student.isReference ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.12)';
+          const namePrefix = student.isReference ? '[참고] ' : '';
+          td.innerHTML = `<span style="background-color: ${nameBg}; padding: 4px 10px; border-radius: 4px; font-weight: 600; color: var(--text-main); display: inline-block;">${namePrefix}${val}</span>`;
         } else {
           td.innerHTML = '<strong>-</strong>';
         }
@@ -2208,7 +2210,10 @@ function bindEventHandlers() {
   if(refCb) {
     refCb.addEventListener('change', (e) => {
       if(e.target.checked) {
-        alert("이 체크박스를 선택하면 참고용 학생으로 등록되며 통계 및 관리 기능이 제한됩니다.");
+        const confirmCheck = confirm("⚠️ 이 체크박스에 체크된 학생은 참고용 학생으로 자소서 작성 및 예상질문 기능 등을 사용할 수 없습니다. 그래도 진행하시겠습니까?");
+        if(!confirmCheck) {
+          e.target.checked = false;
+        }
       }
     });
   }
@@ -2227,6 +2232,8 @@ function bindEventHandlers() {
     ['center','name','school','target-school','parent-phone','student-phone','math-teacher','sci-teacher'].forEach(id => {
       document.getElementById('reg-' + id).value = '';
     });
+    const refCb = document.getElementById('reg-is-reference');
+    if(refCb) refCb.checked = false;
     const phoneInput = document.getElementById('reg-student-phone');
     phoneInput.removeAttribute('readonly');
     phoneInput.style.backgroundColor = '';
@@ -2243,7 +2250,8 @@ function bindEventHandlers() {
       parentPhone: document.getElementById('reg-parent-phone').value,
       studentPhone: document.getElementById('reg-student-phone').value,
       mathTeacher: document.getElementById('reg-math-teacher').value,
-      sciTeacher: document.getElementById('reg-sci-teacher').value
+      sciTeacher: document.getElementById('reg-sci-teacher').value,
+      isReference: document.getElementById('reg-is-reference') ? document.getElementById('reg-is-reference').checked : false
     };
     
     if (!studentData.center || !studentData.name || !studentData.school || !studentData.targetSchool || !studentData.parentPhone) {

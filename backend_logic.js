@@ -1699,7 +1699,8 @@ async function registerStudent(payload) {
       math_teacher: data.mathTeacher || '',
       science_teacher: data.sciTeacher || '',
       student_link: data.studentLink || Math.random().toString(36).substring(2, 14),
-      cover_letter_status: '작성전'
+      cover_letter_status: '작성전',
+      is_reference: !!data.isReference
     };
     const { error } = await window.supabaseClient.from('students').insert([insertObj]);
     if (error) throw error;
@@ -1720,7 +1721,8 @@ async function updateStudent(payload) {
       parent_contact: studentData.parentPhone || '',
       student_contact: studentData.studentPhone || '',
       math_teacher: studentData.mathTeacher || '',
-      science_teacher: studentData.sciTeacher || ''
+      science_teacher: studentData.sciTeacher || '',
+      is_reference: !!studentData.isReference
     };
     const { error } = await window.supabaseClient.from('students').update(updateObj).eq('student_link', originalLink);
     if (error) throw error;
