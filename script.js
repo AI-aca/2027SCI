@@ -622,6 +622,11 @@ function renderMainTable() {
       let valA = a[key] || '';
       let valB = b[key] || '';
       
+      if (key === 'name') {
+        valA = (a.isReference ? '1_' : '0_') + valA;
+        valB = (b.isReference ? '1_' : '0_') + valB;
+      }
+      
       if (key === 'recordScore') {
         valA = parseFloat(valA) || 0;
         valB = parseFloat(valB) || 0;
