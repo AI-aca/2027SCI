@@ -928,8 +928,7 @@ function calculateRecordScore(data) {
 
   // [영역 2] 진로적합성 (75점 만점)
   const careerGoals = dedupe(data.careerGoalsExtracted);
-  const years = new Set(careerGoals.map(c => c.charAt(0))); 
-  scores.area2_item1 = Math.min(5, years.size * 3);
+  scores.area2_item1 = Math.min(5, careerGoals.length * 3);
 
   scores.area2_item2 = Math.min(15, dedupe(data.interestMentionsExtracted).length * 1);
 
