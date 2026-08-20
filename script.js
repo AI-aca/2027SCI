@@ -1775,8 +1775,10 @@ async function runAIFeedbackAction() {
   const statementText = window.getCurrentPsText ? window.getCurrentPsText(true) : document.getElementById('ps-content-textarea').value;
   const rawVal = window.getCurrentPsText ? window.getCurrentPsText(false).replace(/\[상세분할\]/g, '').trim() : statementText.trim();
   
+  const student = STUDENTS_LIST.find(s => String(s.studentLink) === String(ACTIVE_PS_STUDENT));
+  const targetSchool = student ? (student.targetSchool || student.target_school) : null;
   let totalLimit = 0;
-  const matchedSchool = window.SCHOOL_QUESTIONS_MAP && window.SCHOOL_QUESTIONS_MAP.find(s => s.name === window.ACTIVE_PS_SCHOOL);
+  const matchedSchool = window.SCHOOL_QUESTIONS_MAP && window.SCHOOL_QUESTIONS_MAP.find(s => s.name === targetSchool);
   if (matchedSchool && matchedSchool.questions) {
     const qData = matchedSchool.questions.find(q => String(q.label) === String(qNum));
     if (qData) {
@@ -1788,15 +1790,15 @@ async function runAIFeedbackAction() {
     }
   }
   
-  const currentCount = getCharCount(rawVal, window.ACTIVE_PS_SCHOOL);
+  const currentCount = getCharCount(rawVal, targetSchool);
   if (totalLimit > 0) {
     if (currentCount < (totalLimit * 0.6)) {
-      alert('내용이 비었거나 분량이 작아 진행할 수 없습니다.');
+      alert('자소서 내용이 너무 짧거나 비어있습니다.');
       return;
     }
   } else {
     if (!rawVal || rawVal.length < 10) {
-      alert('작성된 내용이 너무 짧거나 없습니다.');
+      alert('자소서 내용이 너무 짧거나 비어있습니다.');
       return;
     }
   }
@@ -3788,8 +3790,10 @@ window.generateChecklist = async function() {
   const textVal = window.getCurrentPsText ? window.getCurrentPsText(true) : document.getElementById('ps-content-textarea').value;
   const rawVal = window.getCurrentPsText ? window.getCurrentPsText(false).replace(/\[상세분할\]/g, '').trim() : textVal.trim();
   
+  const student = STUDENTS_LIST.find(s => String(s.studentLink) === String(ACTIVE_PS_STUDENT));
+  const targetSchool = student ? (student.targetSchool || student.target_school) : null;
   let totalLimit = 0;
-  const matchedSchool = window.SCHOOL_QUESTIONS_MAP && window.SCHOOL_QUESTIONS_MAP.find(s => s.name === window.ACTIVE_PS_SCHOOL);
+  const matchedSchool = window.SCHOOL_QUESTIONS_MAP && window.SCHOOL_QUESTIONS_MAP.find(s => s.name === targetSchool);
   if (matchedSchool && matchedSchool.questions) {
     const qData = matchedSchool.questions.find(q => String(q.label) === String(qNum));
     if (qData) {
@@ -3801,15 +3805,15 @@ window.generateChecklist = async function() {
     }
   }
   
-  const currentCount = getCharCount(rawVal, window.ACTIVE_PS_SCHOOL);
+  const currentCount = getCharCount(rawVal, targetSchool);
   if (totalLimit > 0) {
     if (currentCount < (totalLimit * 0.6)) {
-      alert('내용이 비었거나 분량이 작아 진행할 수 없습니다.');
+      alert('자소서 내용이 너무 짧거나 비어있습니다.');
       return;
     }
   } else {
     if (!rawVal || rawVal === '') {
-      alert('자소서 내용이 비어있습니다.');
+      alert('자소서 내용이 너무 짧거나 비어있습니다.');
       return;
     }
   }
