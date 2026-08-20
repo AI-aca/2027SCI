@@ -422,16 +422,24 @@ function detectRoleFromUrl() {
  * 전체 학생 데이터 연동 로드
  */
 let STUDENTS_LIST = [];
+let PS_PROGRESS_MAP = {}; // 전역 스토어 추가
 let isStudentsDataLoading = true; // 최초 로딩 상태 플래그 추가
 
 async function loadStudentsData() {
   isStudentsDataLoading = true;
   renderMainTable(); // 로딩 중 UI를 띄우기 위해 선호출
   try {
-    STUDENTS_LIST = await ApiClient.post('getStudentsList');
+    // 50명 목록과 글자수 현황 Map을 단 한 번에 병렬 로드
+    const [studentsRes, progressRes] = await Promise.all([
+      ApiClient.post('getStudentsList'),
+      window.getAllPsProgress()
+    ]);
+    STUDENTS_LIST = studentsRes;
+    PS_PROGRESS_MAP = progressRes;
   } catch (err) {
     console.error('학생 데이터 로드 실패:', err);
     STUDENTS_LIST = [];
+    PS_PROGRESS_MAP = {};
   } finally {
     isStudentsDataLoading = false;
     renderMainTable(); // 데이터 도착 후 실제 렌더링
@@ -480,6 +488,7 @@ const TABLE_COLUMNS = {
     { label: '현재 학교', key: 'school' },
     { label: '지원학교', key: 'targetSchool' },
     { label: '최종여부', key: 'psStatus' },
+    { label: '글자수 현황', key: 'psProgress' },
     { label: '자소서 뷰어', key: 'psViewer' },
     { label: '관리', key: 'manage' }
   ],
@@ -712,6 +721,48 @@ function renderMainTable() {
         td.innerHTML = `<span class="badge ${badgeClass}">
                           <i class="fa-solid ${val === '최종제출' ? 'fa-lock' : 'fa-lock-open'}"></i> ${val}
                         </span>`;
+      }
+      else if (col.key === 'psProgress') {
+        const targetSchoolName = student.targetSchool;
+        const schoolConf = window.SCHOOL_QUESTIONS_MAP && window.SCHOOL_QUESTIONS_MAP.find(s => s.name === targetSchoolName);
+        
+        let totalLimit = 0;
+        let totalWritten = 0;
+        
+        if (schoolConf && schoolConf.questions) {
+          const includeSpaces = schoolConf.includeSpaces !== false;
+          
+          schoolConf.questions.forEach(q => {
+            const limit = parseInt(q.limit) || 0;
+            totalLimit += limit;
+            
+            const qNum = String(q.label);
+            let written = 0;
+            if (PS_PROGRESS_MAP && PS_PROGRESS_MAP[student.studentLink] && PS_PROGRESS_MAP[student.studentLink][qNum]) {
+              const counts = PS_PROGRESS_MAP[student.studentLink][qNum];
+              written = includeSpaces ? counts.withSpace : counts.noSpace;
+            }
+            
+            if (written > limit) written = limit;
+            totalWritten += written;
+          });
+        }
+        
+        if (totalLimit === 0) {
+          td.innerHTML = `<span class="text-muted" style="font-size:12px;">정보없음</span>`;
+        } else {
+          const percent = Math.round((totalWritten / totalLimit) * 100);
+          const percentWidth = percent > 100 ? 100 : percent;
+          
+          td.innerHTML = `
+            <div style="position: relative; width: 100%; min-width: 120px; height: 22px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
+              <div style="width: ${percentWidth}%; height: 100%; background: linear-gradient(90deg, var(--color-primary-dark), var(--color-primary)); transition: width 0.5s ease;"></div>
+              <span style="position: absolute; width: 100%; text-align: center; left: 0; top: 0; line-height: 22px; font-size: 11.5px; font-weight: 700; color: #ffffff; text-shadow: 0px 1px 2px rgba(0,0,0,0.8); letter-spacing: 0.5px;">
+                ${totalWritten} / ${totalLimit}자 (${percent}%)
+              </span>
+            </div>
+          `;
+        }
       }
       else if (col.key === 'psViewer') {
         td.innerHTML = `<button class="btn-action" style="padding: 4px 8px; font-size: 14px; background-color: var(--color-secondary);" onclick="window.openPsViewerModal('${student.studentLink}')"><i class="fa-solid fa-eye"></i> 자소서 뷰어</button>`;

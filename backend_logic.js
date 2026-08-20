@@ -2005,3 +2005,38 @@ async function deleteGeneralPdf(payload) {
     return { success: false, error: err.toString() };
   }
 }
+
+// --- 자소서 전체 진행률 일괄 집계 (N+1 쿼리 방지) ---
+async function getAllPsProgress() {
+  try {
+    const { data: statements } = await window.supabaseClient
+      .from('personal_statements')
+      .select('student_link, question_no, content, updated_at')
+      .order('updated_at', { ascending: true }); // 과거 ➔ 최신순 덮어쓰기
+
+    const progressMap = {};
+    if (statements) {
+      statements.forEach(row => {
+        if (!progressMap[row.student_link]) progressMap[row.student_link] = {};
+        
+        // Null 방어: 실제 텍스트가 있을 때만 덮어쓰기
+        if (row.content !== null && row.content !== undefined) {
+          // [상세분할] 태그 제거
+          const cleanText = row.content.replace(/\[상세분할\]/g, '');
+          // 공백 제거 텍스트
+          const noSpaceText = cleanText.replace(/\s+/g, '');
+          
+          progressMap[row.student_link][row.question_no] = {
+            withSpace: cleanText.length,
+            noSpace: noSpaceText.length
+          };
+        }
+      });
+    }
+    return progressMap;
+  } catch (err) {
+    console.error('getAllPsProgress error:', err);
+    return {}; // 에러 시 안전하게 빈 객체 반환
+  }
+}
+window.getAllPsProgress = getAllPsProgress;
