@@ -733,17 +733,28 @@ function renderMainTable() {
           const includeSpaces = schoolConf.includeSpaces !== false;
           
           schoolConf.questions.forEach(q => {
-            const limit = parseInt(q.limit) || 0;
-            totalLimit += limit;
+            // 1. 단일 문항 limit 추출
+            let qLimit = parseInt(q.limit);
             
-            const qNum = String(q.label);
+            // 2. 소문항(details) 중첩 구조 처리: 단일 limit이 없는 경우 소문항 limit 모두 합산
+            if (isNaN(qLimit) || qLimit <= 0) {
+              if (q.details && q.details.length > 0) {
+                qLimit = q.details.reduce((sum, d) => sum + (parseInt(d.limit) || 0), 0);
+              } else {
+                qLimit = 0;
+              }
+            }
+            
+            totalLimit += qLimit;
+            
+            const qNum = String(q.label).trim();
             let written = 0;
             if (PS_PROGRESS_MAP && PS_PROGRESS_MAP[student.studentLink] && PS_PROGRESS_MAP[student.studentLink][qNum]) {
               const counts = PS_PROGRESS_MAP[student.studentLink][qNum];
               written = includeSpaces ? counts.withSpace : counts.noSpace;
             }
             
-            if (written > limit) written = limit;
+            if (written > qLimit) written = qLimit;
             totalWritten += written;
           });
         }
@@ -754,11 +765,12 @@ function renderMainTable() {
           const percent = Math.round((totalWritten / totalLimit) * 100);
           const percentWidth = percent > 100 ? 100 : percent;
           
+          // UI: 육안 검증을 위해 명확한 수치 표기 복구 및 정돈된 폭(width) 설정
           td.innerHTML = `
-            <div style="position: relative; width: 100%; min-width: 60px; max-width: 100px; height: 22px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); margin: 0 auto;">
+            <div style="position: relative; width: 100%; min-width: 125px; height: 22px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); margin: 0 auto;">
               <div style="width: ${percentWidth}%; height: 100%; background: linear-gradient(90deg, var(--color-primary-hover), var(--color-primary)); transition: width 0.5s ease;"></div>
               <span style="position: absolute; width: 100%; text-align: center; left: 0; top: 0; line-height: 22px; font-size: 11.5px; font-weight: 700; color: #ffffff; text-shadow: 0px 1px 2px rgba(0,0,0,0.8); letter-spacing: 0.5px;">
-                ${percent}%
+                ${totalWritten} / ${totalLimit}자 (${percent}%)
               </span>
             </div>
           `;

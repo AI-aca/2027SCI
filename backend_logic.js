@@ -2009,30 +2009,40 @@ async function deleteGeneralPdf(payload) {
 // --- 자소서 전체 진행률 일괄 집계 (N+1 쿼리 방지) ---
 async function getAllPsProgress() {
   try {
-    const { data: statements } = await window.supabaseClient
-      .from('personal_statements')
-      .select('student_link, question_no, content, updated_at')
-      .order('updated_at', { ascending: true }); // 과거 ➔ 최신순 덮어쓰기
+    let allStatements = [];
+    let from = 0;
+    const pageSize = 1000;
+    
+    // 수파베이스 기본 1000건 제한(Pagination) 돌파 로직
+    while (true) {
+      const { data: statements, error } = await window.supabaseClient
+        .from('personal_statements')
+        .select('student_link, question_no, content, updated_at')
+        .order('updated_at', { ascending: true })
+        .range(from, from + pageSize - 1);
+        
+      if (error || !statements || statements.length === 0) break;
+      allStatements = allStatements.concat(statements);
+      if (statements.length < pageSize) break;
+      from += pageSize;
+    }
 
     const progressMap = {};
-    if (statements) {
-      statements.forEach(row => {
-        if (!progressMap[row.student_link]) progressMap[row.student_link] = {};
+    allStatements.forEach(row => {
+      if (!progressMap[row.student_link]) progressMap[row.student_link] = {};
+      
+      // Null 방어: 실제 텍스트가 있을 때만 덮어쓰기
+      if (row.content !== null && row.content !== undefined) {
+        // 타입 충돌 방지를 위해 강제 String 캐스팅 후 태그 제거
+        const cleanText = String(row.content).replace(/\[상세분할\]/g, '');
+        const noSpaceText = cleanText.replace(/\s+/g, '');
         
-        // Null 방어: 실제 텍스트가 있을 때만 덮어쓰기
-        if (row.content !== null && row.content !== undefined) {
-          // [상세분할] 태그 제거
-          const cleanText = row.content.replace(/\[상세분할\]/g, '');
-          // 공백 제거 텍스트
-          const noSpaceText = cleanText.replace(/\s+/g, '');
-          
-          progressMap[row.student_link][row.question_no] = {
-            withSpace: cleanText.length,
-            noSpace: noSpaceText.length
-          };
-        }
-      });
-    }
+        progressMap[row.student_link][row.question_no] = {
+          withSpace: cleanText.length,
+          noSpace: noSpaceText.length
+        };
+      }
+    });
     return progressMap;
   } catch (err) {
     console.error('getAllPsProgress error:', err);

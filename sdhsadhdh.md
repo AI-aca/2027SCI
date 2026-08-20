@@ -20,6 +20,10 @@
 ### 2.3. [상세분할] 태그 및 N+1 쿼리 병목
 **해결:** `.replace(/\[상세분할\]/g, '')` 적용 및 `Promise.all` 기반 단일 쿼리 통신으로 처리.
 
+### 2.4. 소문항(details) 중첩 구조에 따른 총 글자 수 누락 방지 (신규 발견 🚨)
+**문제:** 학교별 문항 설정에서 단일 문항이 아닌 소문항(예: 1-1, 1-2)으로 분할된 경우, 부모 문항의 `q.limit`는 비어있고 하위 `details` 배열에 각각 제한 글자 수가 존재합니다. 기존 로직은 부모 문항의 글자 수만 더하도록 되어 있어, 소문항을 사용하는 학교의 최대 글자 수(totalLimit)가 통째로 0으로 누락되고 덩달아 작성된 글자 수까지 0으로 깎이는 치명적 버그가 발생했습니다.
+**해결:** `q.limit`가 비어있을 경우, `q.details` 배열을 순회하여 내부의 `d.limit` 값을 합산하도록 연산 로직을 이중 구조로 수정합니다.
+
 ---
 
 ## 3. 파일별 상세 수정 계획
@@ -27,31 +31,40 @@
 ### [수정 1] 백엔드 데이터 집계 로직 추가 (`backend_logic.js`)
 ```javascript
 async function getAllPsProgress() {
-  const { data: statements } = await window.supabaseClient
-    .from('personal_statements')
-    .select('student_link, question_no, content, updated_at')
-    .order('updated_at', { ascending: true }); // 과거 ➔ 최신순 덮어쓰기
+  let allStatements = [];
+  let from = 0;
+  const pageSize = 1000;
+  
+  // 수파베이스 기본 1000건 제한(Pagination) 돌파 로직
+  while (true) {
+    const { data: statements, error } = await window.supabaseClient
+      .from('personal_statements')
+      .select('student_link, question_no, content, updated_at')
+      .order('updated_at', { ascending: true })
+      .range(from, from + pageSize - 1);
+      
+    if (error || !statements || statements.length === 0) break;
+    allStatements = allStatements.concat(statements);
+    if (statements.length < pageSize) break;
+    from += pageSize;
+  }
 
   const progressMap = {};
-  if (statements) {
-    statements.forEach(row => {
-      if (!progressMap[row.student_link]) progressMap[row.student_link] = {};
+  allStatements.forEach(row => {
+    if (!progressMap[row.student_link]) progressMap[row.student_link] = {};
+    
+    // Null 방어: 실제 텍스트가 있을 때만 덮어쓰기
+    if (row.content !== null && row.content !== undefined) {
+      // 타입 충돌 방지를 위해 강제 String 캐스팅 후 태그 제거
+      const cleanText = String(row.content).replace(/\[상세분할\]/g, '');
+      const noSpaceText = cleanText.replace(/\s+/g, '');
       
-      // Null 방어: 실제 텍스트가 있을 때만 덮어쓰기 (교사 피드백 단독 업데이트 시 content가 null일 수 있음)
-      if (row.content !== null && row.content !== undefined) {
-        // [상세분할] 태그 제거
-        const cleanText = row.content.replace(/\\[상세분할\\]/g, '');
-        // 공백 제거 텍스트
-        const noSpaceText = cleanText.replace(/\\s+/g, '');
-        
-        // 프론트엔드에서 학교 설정에 따라 골라 쓸 수 있도록 두 가지 버전 모두 제공
-        progressMap[row.student_link][row.question_no] = {
-          withSpace: cleanText.length,
-          noSpace: noSpaceText.length
-        };
-      }
-    });
-  }
+      progressMap[row.student_link][row.question_no] = {
+        withSpace: cleanText.length,
+        noSpace: noSpaceText.length
+      };
+    }
+  });
   return progressMap;
 }
 window.getAllPsProgress = getAllPsProgress;
@@ -92,36 +105,46 @@ else if (col.key === 'psProgress') {
   let totalWritten = 0;
   
   if (schoolConf && schoolConf.questions) {
-    // 해당 학교가 공백을 포함하는지 판별 (기본값 true)
     const includeSpaces = schoolConf.includeSpaces !== false;
     
     schoolConf.questions.forEach(q => {
-      const limit = parseInt(q.limit) || 0;
-      totalLimit += limit;
+      // 1. 단일 문항 limit 추출
+      let qLimit = parseInt(q.limit);
       
-      const qNum = String(q.label);
+      // 2. 소문항(details) 중첩 구조 처리: 단일 limit이 없는 경우 소문항 limit 모두 합산
+      if (isNaN(qLimit) || qLimit <= 0) {
+        if (q.details && q.details.length > 0) {
+          qLimit = q.details.reduce((sum, d) => sum + (parseInt(d.limit) || 0), 0);
+        } else {
+          qLimit = 0;
+        }
+      }
+      
+      totalLimit += qLimit;
+      
+      const qNum = String(q.label).trim();
       let written = 0;
       if (PS_PROGRESS_MAP && PS_PROGRESS_MAP[student.studentLink] && PS_PROGRESS_MAP[student.studentLink][qNum]) {
         const counts = PS_PROGRESS_MAP[student.studentLink][qNum];
-        // 학교 설정에 맞게 글자 수 선택
         written = includeSpaces ? counts.withSpace : counts.noSpace;
       }
       
-      if (written > limit) written = limit;
+      if (written > qLimit) written = qLimit;
       totalWritten += written;
     });
   }
   
   if (totalLimit === 0) {
-    td.innerHTML = `<span class="text-muted">정보없음</span>`;
+    td.innerHTML = `<span class="text-muted" style="font-size:12px;">정보없음</span>`;
   } else {
     const percent = Math.round((totalWritten / totalLimit) * 100);
     const percentWidth = percent > 100 ? 100 : percent;
     
+    // UI: 육안 검증을 위해 명확한 수치 표기 복구 및 정돈된 폭(width) 설정
     td.innerHTML = `
-      <div style="position: relative; width: 100%; min-width: 120px; height: 22px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
-        <div style="width: ${percentWidth}%; height: 100%; background: linear-gradient(90deg, var(--color-primary-dark), var(--color-primary)); transition: width 0.5s ease;"></div>
-        <span style="position: absolute; width: 100%; text-align: center; left: 0; top: 0; line-height: 22px; font-size: 11px; font-weight: 700; color: #fff; text-shadow: 0px 1px 2px rgba(0,0,0,0.8); letter-spacing: 0.5px;">
+      <div style="position: relative; width: 100%; min-width: 125px; height: 22px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); margin: 0 auto;">
+        <div style="width: ${percentWidth}%; height: 100%; background: linear-gradient(90deg, var(--color-primary-hover), var(--color-primary)); transition: width 0.5s ease;"></div>
+        <span style="position: absolute; width: 100%; text-align: center; left: 0; top: 0; line-height: 22px; font-size: 11.5px; font-weight: 700; color: #ffffff; text-shadow: 0px 1px 2px rgba(0,0,0,0.8); letter-spacing: 0.5px;">
           ${totalWritten} / ${totalLimit}자 (${percent}%)
         </span>
       </div>
