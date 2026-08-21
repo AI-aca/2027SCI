@@ -2465,7 +2465,11 @@ function bindEventHandlers() {
       
       if (CURRENT_ROLE === '학생') {
         if (curr.text !== oldPs) {
-          contents.push({ qNum: curr.qNum, text: curr.text, type: '자소서' });
+          if (curr.text.trim() === '') {
+            alert(`[${curr.qNum}] 자소서 내용이 비어있어 해당 문항의 저장이 불가합니다.`);
+          } else {
+            contents.push({ qNum: curr.qNum, text: curr.text, type: '자소서' });
+          }
         }
       } else {
         if (curr.feedback !== oldFb) {
