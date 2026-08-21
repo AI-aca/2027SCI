@@ -2456,6 +2456,9 @@ function bindEventHandlers() {
     }
     
     const contents = [];
+    let reportMsg = "다음 내용으로 전체 저장이 진행됩니다.\n\n";
+    let validSaveCount = 0;
+    const qSelector = document.getElementById('ps-question-selector');
     
     // 모든 문항을 순회하며 원본과 달라진 부분만 추출 (일괄 저장)
     hData.current.forEach(curr => {
@@ -2463,17 +2466,34 @@ function bindEventHandlers() {
       const oldPs = orig ? orig.text : '';
       const oldFb = orig ? orig.feedback : '';
       
+      let displayName = curr.qNum;
+      if (qSelector) {
+        const matchedOpt = Array.from(qSelector.options).find(o => o.value === String(curr.qNum));
+        if (matchedOpt) displayName = matchedOpt.textContent.trim();
+      }
+      
       if (CURRENT_ROLE === '학생') {
-        if (curr.text !== oldPs) {
-          if (curr.text.trim() === '') {
-            alert(`[${curr.qNum}] 자소서 내용이 비어있어 해당 문항의 저장이 불가합니다.`);
-          } else {
-            contents.push({ qNum: curr.qNum, text: curr.text, type: '자소서' });
-          }
+        const isChanged = (curr.text !== oldPs);
+        const isEmpty = (curr.text.trim() === '');
+        
+        if (isChanged && !isEmpty) {
+          reportMsg += `✅ ${displayName} : 내용 수정됨 (저장 대기)\n`;
+          contents.push({ qNum: curr.qNum, text: curr.text, type: '자소서' });
+          validSaveCount++;
+        } else if (!isChanged && !isEmpty) {
+          reportMsg += `➖ ${displayName} : 변경 없음 (기존 유지)\n`;
+        } else if (!isChanged && isEmpty) {
+          reportMsg += `❌ ${displayName} : 빈 칸 (저장 불가)\n`;
+        } else if (isChanged && isEmpty) {
+          reportMsg += `❌ ${displayName} : 내용이 빈 칸으로 수정됨 (저장 불가)\n`;
         }
       } else {
         if (curr.feedback !== oldFb) {
+          reportMsg += `✅ ${displayName} : 피드백 내용 수정됨 (저장 대기)\n`;
           contents.push({ qNum: curr.qNum, text: curr.feedback, type: '피드백' });
+          validSaveCount++;
+        } else {
+          reportMsg += `➖ ${displayName} : 피드백 변경 없음 (기존 유지)\n`;
         }
       }
     });
@@ -2490,11 +2510,17 @@ function bindEventHandlers() {
     const currentStatus = student ? student.cover_letter_status : '';
     const isStatusMismatch = (isAllEmpty && currentStatus !== '작성전') || (!isAllEmpty && currentStatus === '작성전');
 
-    if (contents.length === 0 && !isStatusMismatch) {
+    if (validSaveCount === 0 && !isStatusMismatch) {
       if (!window._isSilentSave) {
-        alert('변경된 내용이 없습니다. 저장할 필요가 없습니다. (Dirty Check 통과)');
+        alert('⚠️ 수정한 문항이 없거나 모두 빈 칸이어서 저장할 항목이 없습니다.');
       }
       return;
+    }
+
+    if (!window._isSilentSave && validSaveCount > 0) {
+      if (!confirm(reportMsg + "\n위 상태로 최종 저장하시겠습니까?")) {
+        return;
+      }
     }
 
     const writerName = CURRENT_ROLE === '학생' ? '학생' : '선생님';
