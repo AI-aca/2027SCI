@@ -1503,8 +1503,12 @@ async function getPersonalStatementHistory(payload) {
       }
     });
 
-    // 별도의 teacher_feedbacks 테이블에서 피드백 최신본 덮어쓰기
-    const { data: teacherFeedbacks } = await window.supabaseClient.from('teacher_feedbacks').select('*').eq('student_link', studentId);
+    // 별도의 teacher_feedbacks 테이블에서 피드백 최신본 덮어쓰기 (시간순 정렬 강제)
+    const { data: teacherFeedbacks } = await window.supabaseClient.from('teacher_feedbacks').select('*').eq('student_link', studentId).order('updated_at', { ascending: true });
+    
+    // 명시적인 학교 꼬리표가 붙은 피드백을 추적하기 위한 방어벽
+    const explicitFeedbackKeys = new Set();
+
     (teacherFeedbacks || []).forEach(f => {
       let qNumStr = String(f.question_no);
       
@@ -1519,12 +1523,20 @@ async function getPersonalStatementHistory(payload) {
         targetKey = targetSchool + '|' + qNumStr;
       }
 
+      // [핵심 차단 로직] 꼬리표가 없는 유령 데이터(!vLabel)가, 이미 방어벽이 쳐진 자리를 덮어쓰려 하면 즉시 튕겨냄
+      if (!vLabel && explicitFeedbackKeys.has(targetKey)) {
+        return; // 하극상 무시하고 다음으로 넘어감
+      }
+
       if (currentStateMap[targetKey]) {
         currentStateMap[targetKey].feedback = f.feedback || '';
+        // 명확한 꼬리표(vLabel)가 있는 정상 최신 데이터가 자리를 차지하면, 그 자리에 철창(방어벽)을 내려 잠금
+        if (vLabel) explicitFeedbackKeys.add(targetKey);
       } else if (!vLabel) {
         // 타겟 학교 키가 없으면 동일한 qNum을 가진 아무거나 덮어쓰기 (호환성 유지)
         for (let key in currentStateMap) {
-           if (currentStateMap[key].qNum === qNumStr) {
+           // 덮어쓰기 호환성 로직에서도 철창이 쳐진 자리는 건드리지 못하게 방어
+           if (currentStateMap[key].qNum === qNumStr && !explicitFeedbackKeys.has(key)) {
                currentStateMap[key].feedback = f.feedback || '';
            }
         }
