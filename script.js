@@ -1145,7 +1145,7 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual', ta
   
   // 동적 질문 바인딩 (학교별 맞춤 문항 연동)
   const schoolMap = window.SCHOOL_QUESTIONS_MAP || [];
-  const studentSchool = student.targetSchool || '';
+  const studentSchool = (student.targetSchool || '').trim();
   const matchedSchool = schoolMap.find(s => s.name === studentSchool);
   const questions = (matchedSchool && matchedSchool.questions && matchedSchool.questions.length > 0)
     ? matchedSchool.questions
@@ -1215,7 +1215,8 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual', ta
     
     // 타학교 미아 데이터 드롭다운 꼬리표 추가
     historyData.current.forEach(curr => {
-      if (curr.version_label && curr.version_label !== studentSchool) {
+      const cLabel = (curr.version_label || '').trim();
+      if (cLabel && cLabel !== studentSchool) {
         const compositeKey = curr.version_label + '|' + curr.qNum;
         const exists = Array.from(psSelector.options).some(o => o.value === compositeKey);
         if (!exists) {
