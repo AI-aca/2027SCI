@@ -1202,7 +1202,7 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual', ta
     const validLabels = questions.map(q => q.label.trim());
     historyData.current = historyData.current.filter(c => {
       if (c.version_label === '최신') return false;
-      if (!isNaN(c.qNum) && c.version_label === studentSchool) return validLabels.includes(String(c.qNum));
+      if (!isNaN(c.qNum) && c.version_label === studentSchool) return validLabels.some(v => window.normalizeQNum(v) === window.normalizeQNum(c.qNum));
       return true;
     });
     
