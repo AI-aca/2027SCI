@@ -1219,22 +1219,46 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual', ta
     window.PS_CURRENT_HISTORY = historyData;
     window.PS_ORIGINAL_HISTORY_CURRENT = JSON.parse(JSON.stringify(historyData.current || []));
     
-    // 타학교 미아 데이터 드롭다운 꼬리표 추가
-    historyData.current.forEach(curr => {
+    // 타학교 미아 데이터 드롭다운 꼬리표 추가 (문항 번호순 정렬 보장)
+    const oldItems = historyData.current.filter(curr => {
       const cLabel = (curr.version_label || '').trim();
-      if (cLabel && cLabel !== studentSchool) {
-        const compositeKey = curr.version_label + '|' + curr.qNum;
-        const exists = Array.from(psSelector.options).some(o => o.value === compositeKey);
-        if (!exists) {
-          const opt = document.createElement('option');
-          opt.value = compositeKey;
-          opt.style.backgroundColor = '#1e293b';
-          opt.style.color = '#f8fafc';
-          let displayQNum = String(curr.qNum).startsWith('문항') ? String(curr.qNum) : `문항 ${curr.qNum}`;
-          opt.textContent = `(구) [${curr.version_label}] ${displayQNum}`;
-          opt.dataset.qtext = curr.question || '';
-          psSelector.appendChild(opt);
-        }
+      return cLabel && cLabel !== studentSchool;
+    });
+
+    // 문항 1, 문항 1-1, 문항 2-1 순서로 논리적 정렬 (단순 문자열 정렬 시 10번이 2번보다 앞에 오는 버그 방지)
+    oldItems.sort((a, b) => {
+      const parseNum = (str) => {
+        const m = String(str).match(/(\d+)(?:-(\d+))?/);
+        if (!m) return [999, 999]; // 숫자가 없으면 맨 뒤로
+        return [parseInt(m[1]), parseInt(m[2] || 0)];
+      };
+      
+      const numA = parseNum(a.qNum);
+      const numB = parseNum(b.qNum);
+      
+      // 1. 학교 이름표(version_label)로 먼저 그룹핑 (예: 진산과고끼리, 인과고끼리 묶음)
+      const labelA = (a.version_label || '').trim();
+      const labelB = (b.version_label || '').trim();
+      if (labelA !== labelB) return labelA.localeCompare(labelB);
+      
+      // 2. 같은 학교 내에서는 대문항 번호 정렬
+      if (numA[0] !== numB[0]) return numA[0] - numB[0];
+      // 3. 대문항이 같으면 소문항 번호 정렬
+      return numA[1] - numB[1];
+    });
+
+    oldItems.forEach(curr => {
+      const compositeKey = curr.version_label + '|' + curr.qNum;
+      const exists = Array.from(psSelector.options).some(o => o.value === compositeKey);
+      if (!exists) {
+        const opt = document.createElement('option');
+        opt.value = compositeKey;
+        opt.style.backgroundColor = '#1e293b';
+        opt.style.color = '#f8fafc';
+        let displayQNum = String(curr.qNum).startsWith('문항') ? String(curr.qNum) : `문항 ${curr.qNum}`;
+        opt.textContent = `(구) [${curr.version_label}] ${displayQNum}`;
+        opt.dataset.qtext = curr.question || '';
+        psSelector.appendChild(opt);
       }
     });
     
