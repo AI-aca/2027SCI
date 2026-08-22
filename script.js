@@ -330,8 +330,7 @@ function applyRoleUI(role) {
     });
     const btnUploadPdf = document.getElementById('btn-upload-pdf');
     if (btnUploadPdf) btnUploadPdf.style.display = 'none'; // 학생은 숨김
-    const btnDelPsHistory = document.getElementById('btn-delete-ps-history');
-    if (btnDelPsHistory) btnDelPsHistory.style.display = 'none';
+
     
     if (aiFeedbackTab) aiFeedbackTab.style.display = 'none';
     document.getElementById('current-role-display').textContent = '학생 전용 작성';
@@ -349,8 +348,7 @@ function applyRoleUI(role) {
     if (settingsMenu) settingsMenu.parentNode.style.display = 'none';
     const btnUploadPdf = document.getElementById('btn-upload-pdf');
     if (btnUploadPdf) btnUploadPdf.style.display = 'none'; // 교사는 숨김 (조회만 가능)
-    const btnDelPsHistory = document.getElementById('btn-delete-ps-history');
-    if (btnDelPsHistory) btnDelPsHistory.style.display = 'none';
+
     if (aiFeedbackTab) aiFeedbackTab.style.display = 'block';
     document.getElementById('current-role-display').textContent = '일반 교사 계정';
     document.getElementById('current-user-status').textContent = '조회 및 첨삭 권한 보유';
@@ -369,8 +367,7 @@ function applyRoleUI(role) {
     if (settingsMenu) settingsMenu.parentNode.style.display = 'block';
     const btnUploadPdf = document.getElementById('btn-upload-pdf');
     if (btnUploadPdf) btnUploadPdf.style.display = 'block'; // 관리자 보임
-    const btnDelPsHistory = document.getElementById('btn-delete-ps-history');
-    if (btnDelPsHistory) btnDelPsHistory.style.display = 'inline-block';
+
     if (aiFeedbackTab) aiFeedbackTab.style.display = 'block';
     document.getElementById('current-role-display').textContent = '시스템 관리자';
     document.getElementById('current-user-status').textContent = 'AI 및 모든 환경 제어권 보유';
@@ -1687,10 +1684,7 @@ function bindPersonalStatementToSelector(compositeQNum) {
       opts[1].dataset.is_protected = "true";
       opts[1].textContent += " (최신)";
     }
-    if (opts.length > 2) {
-      opts[2].dataset.is_protected = "true";
-      opts[2].textContent += " [보호됨]";
-    }
+
   }
 }
 
@@ -2363,43 +2357,7 @@ function bindEventHandlers() {
     bindPersonalStatementToSelector(e.target.value);
   };
 
-  const btnDelPsHistory = document.getElementById('btn-delete-ps-history');
-  if (btnDelPsHistory) {
-    btnDelPsHistory.onclick = async () => {
-      const historySelector = document.getElementById('ps-history-selector');
-      const selectedOption = historySelector.options[historySelector.selectedIndex];
-      if (!selectedOption || !selectedOption.value) {
-        alert('삭제할 과거 버전을 선택해주세요.');
-        return;
-      }
-      
-      const recordId = selectedOption.dataset.record_id;
-      
-      if (!recordId) {
-        alert('삭제할 데이터의 고유 ID를 찾을 수 없습니다.');
-        return;
-      }
-      
-      if (selectedOption.dataset.is_protected === "true") {
-        alert('안전 보호: 직전 저장 버전(최소 2개)은 시스템 보호를 위해 삭제할 수 없습니다.');
-        return;
-      }
 
-      if (confirm('정말 삭제하시겠습니까?')) {
-        const res = await window.deletePersonalStatementSnapshot(recordId);
-        if (res.success) {
-          alert('삭제되었습니다.');
-          selectedOption.remove();
-          historySelector.value = '';
-          if (typeof loadPersonalStatementData === 'function') {
-            loadPersonalStatementData(studentId); // 전체 상태 갱신
-          }
-        } else {
-          alert('삭제 중 오류가 발생했습니다: ' + res.error);
-        }
-      }
-    };
-  }
 
   // 타임머신 드롭다운 변경 연동
   const historySelector = document.getElementById('ps-history-selector');
