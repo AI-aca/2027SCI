@@ -1532,9 +1532,11 @@ function bindPersonalStatementToSelector(compositeQNum) {
          document.getElementById('ps-char-count').textContent = totalCnt;
          
          const currentQNum = document.getElementById('ps-question-selector').value;
+         const uiTargetSchool = document.getElementById('ps-school-name').textContent.replace('지원 학교: ', '');
+         const [tSchool, tQNum] = currentQNum.includes('|') ? currentQNum.split('|') : [uiTargetSchool, currentQNum];
          const hData = window.PS_CURRENT_HISTORY;
          if (hData && hData.current) {
-           const curr = hData.current.find(c => String(c.qNum) == String(currentQNum));
+           const curr = hData.current.find(c => String(c.qNum) == String(tQNum) && (c.version_label === tSchool || (!c.version_label && tSchool === uiTargetSchool)));
            if (curr) {
              curr.text = combined;
              isPsDirty = true;
@@ -2433,14 +2435,16 @@ function bindEventHandlers() {
   
     // 글자 수 실시간 카운팅 및 로컬 자동 기억(백업)
   document.getElementById('ps-content-textarea').oninput = (e) => {
-    const targetSchool = document.getElementById('ps-school-name').textContent.replace('지원 학교: ', '');
+    const uiTargetSchool = document.getElementById('ps-school-name').textContent.replace('지원 학교: ', '');
+    const targetSchool = uiTargetSchool;
     document.getElementById('ps-char-count').textContent = getCharCount(e.target.value, targetSchool);
     
     // 로컬 자동 기억 (자소서)
     const qNum = document.getElementById('ps-question-selector').value;
+    const [tSchool, tQNum] = qNum.includes('|') ? qNum.split('|') : [uiTargetSchool, qNum];
     const hData = window.PS_CURRENT_HISTORY;
     if (hData && hData.current) {
-      const curr = hData.current.find(c => String(c.qNum) == String(qNum));
+      const curr = hData.current.find(c => String(c.qNum) == String(tQNum) && (c.version_label === tSchool || (!c.version_label && tSchool === uiTargetSchool)));
       if (curr) {
         curr.text = e.target.value;
         isPsDirty = true;
@@ -2450,10 +2454,12 @@ function bindEventHandlers() {
 
   document.getElementById('manual-feedback-textarea').oninput = (e) => {
     // 로컬 자동 기억 (피드백)
+    const uiTargetSchool = document.getElementById('ps-school-name').textContent.replace('지원 학교: ', '');
     const qNum = document.getElementById('ps-question-selector').value;
+    const [tSchool, tQNum] = qNum.includes('|') ? qNum.split('|') : [uiTargetSchool, qNum];
     const hData = window.PS_CURRENT_HISTORY;
     if (hData && hData.current) {
-      const curr = hData.current.find(c => String(c.qNum) == String(qNum));
+      const curr = hData.current.find(c => String(c.qNum) == String(tQNum) && (c.version_label === tSchool || (!c.version_label && tSchool === uiTargetSchool)));
       if (curr) {
         curr.feedback = e.target.value;
         isPsDirty = true;
