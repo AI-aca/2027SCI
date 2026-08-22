@@ -1394,7 +1394,7 @@ async function getPersonalStatementHistory(payload) {
     const { data: student } = await window.supabaseClient.from('students').select('*').eq('student_link', studentId).single();
     if (!student) throw new Error('학생 정보를 찾을 수 없습니다.');
     
-    const targetSchool = student.target_school || student.targetSchool || '';
+    const targetSchool = (student.target_school || student.targetSchool || '').trim();
 
     const currentStateMap = {};
     
@@ -1424,9 +1424,10 @@ async function getPersonalStatementHistory(payload) {
             matchedSchool.questions.forEach(q => {
               const qVal = String(q.label);
               qMap[qVal] = q.content || '';
-              if (!currentStateMap[qVal]) {
-                currentStateMap[qVal] = {
-                  qNum: qVal, question: q.content || '', answer: '', text: '', feedback: '', length: 0
+              const uniqueKey = targetSchool + '|' + qVal;
+              if (!currentStateMap[uniqueKey]) {
+                currentStateMap[uniqueKey] = {
+                  qNum: qVal, question: q.content || '', answer: '', text: '', feedback: '', length: 0, version_label: targetSchool
                 };
               }
             });
@@ -1453,11 +1454,12 @@ async function getPersonalStatementHistory(payload) {
         qText = qMap[qNumStr] || qMap['문항' + qNumStr] || '';
       }
       
-      const uniqueKey = (s.version_label || '') + '|' + s.question_no;
+      const cleanVersionLabel = (s.version_label || '').trim();
+      const uniqueKey = cleanVersionLabel + '|' + s.question_no;
 
       if (!currentStateMap[uniqueKey]) {
         currentStateMap[uniqueKey] = {
-          qNum: s.question_no, question: qText, answer: '', text: '', feedback: '', length: 0, version_label: s.version_label, id: s.id
+          qNum: s.question_no, question: qText, answer: '', text: '', feedback: '', length: 0, version_label: cleanVersionLabel, id: s.id
         };
       }
       
