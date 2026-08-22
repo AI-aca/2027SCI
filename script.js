@@ -1607,12 +1607,7 @@ function bindPersonalStatementToSelector(compositeQNum) {
   if (checklistContainer) {
     const aiLogs = hData.aiHistory || [];
     const newType = '문항[' + compositeQNum + ']_체크리스트';
-    const fallbackQNum = compositeQNum.includes('|') ? compositeQNum.split('|')[1] : compositeQNum;
-    const legacyType = '문항' + fallbackQNum + '_체크리스트';
     let matchingLogs = aiLogs.filter(log => log.type === newType);
-    if (matchingLogs.length === 0) {
-      matchingLogs = aiLogs.filter(log => log.type === legacyType);
-    }
     if (matchingLogs.length > 0) {
       const lastLog = matchingLogs[matchingLogs.length - 1];
       checklistContainer.innerHTML = renderChecklistToHTML(lastLog.feedback);
@@ -1637,12 +1632,7 @@ function bindPersonalStatementToSelector(compositeQNum) {
   if (aiContainer) {
     const aiLog = hData.aiHistory || [];
     const newType = '문항[' + compositeQNum + ']_도움받기';
-    const fallbackQNum = compositeQNum.includes('|') ? compositeQNum.split('|')[1] : compositeQNum;
-    const legacyType = '문항' + fallbackQNum + '_도움받기';
     let targetAILogs = aiLog.filter(log => log.type === newType);
-    if (targetAILogs.length === 0) {
-      targetAILogs = aiLog.filter(log => log.type === legacyType);
-    }
     if (targetAILogs.length > 0) {
       const lastLog = targetAILogs[targetAILogs.length - 1];
       aiContainer.innerHTML = parseMarkdown(lastLog.feedback);

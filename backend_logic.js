@@ -94,9 +94,10 @@ async function generateAIChecklist(studentLink, qNum, statementText) {
     let qContent = '';
     let adminReqText = '';
     const parsedQNum = qNum.includes('|') ? qNum.split('|')[1] : qNum;
+    const targetSchoolName = qNum.includes('|') ? qNum.split('|')[0] : '';
     const { data: student } = await window.supabaseClient.from('students').select('*').eq('student_link', studentLink).single();
     if (student) {
-      const tSchool = student.targetSchool || student.target_school;
+      const tSchool = targetSchoolName || student.targetSchool || student.target_school;
       const { data: settingsRow } = await window.supabaseClient.from('settings').select('setting_value').eq('setting_key', 'schools').single();
       if (settingsRow && settingsRow.setting_value) {
         try {
@@ -155,16 +156,21 @@ async function generateAIChecklist(studentLink, qNum, statementText) {
 
 async function generateAIFeedback(studentId, qNum, statementText) {
   try {
+    const parsedQNum = qNum.includes('|') ? qNum.split('|')[1] : qNum;
+    const targetSchoolName = qNum.includes('|') ? qNum.split('|')[0] : '';
+    
     const { data: student } = await window.supabaseClient.from('students').select('*').eq('student_link', studentId).single();
     if (!student) return { success: false, error: '학생을 찾을 수 없습니다.' };
     
     const { data: settingsData } = await window.supabaseClient.from('settings').select('setting_value').eq('setting_key', 'schools').single();
     const schools = settingsData ? JSON.parse(settingsData.setting_value) : [];
-    const targetSchoolData = schools.find(s => s.name === student.targetSchool);
+    
+    const tSchool = targetSchoolName || student.targetSchool || student.target_school;
+    const targetSchoolData = schools.find(s => s.name === tSchool);
     
     let qContent = '';
     if (targetSchoolData && targetSchoolData.questions) {
-      const qRow = targetSchoolData.questions.find(q => String(q.label) === String(qNum));
+      const qRow = targetSchoolData.questions.find(q => String(q.label) === String(parsedQNum));
       if (qRow) qContent = qRow.content || '';
     }
 
@@ -172,7 +178,6 @@ async function generateAIFeedback(studentId, qNum, statementText) {
     const { data: fbPromptData } = await window.supabaseClient.from('settings').select('setting_value').eq('setting_key', 'prompt_feedback').single();
     let baseSystemPrompt = fbPromptData ? fbPromptData.setting_value : "당신은 최고 수준의 입시 컨설턴트입니다.";
     
-    const parsedQNum = qNum.includes('|') ? qNum.split('|')[1] : qNum;
     const cleanQNum = String(parsedQNum).replace(/^문항\s*/, '');
     const formatConstraint = `\n\n🚨[출력 서식 및 어투 강제 규칙 - 반드시 지킬 것]
 이 출력은 학생의 자기소개서 [문항 ${cleanQNum}]에 대한 피드백입니다.
@@ -272,7 +277,12 @@ async function generateAIQuestions(studentId, type) {
       const { data: statements } = await window.supabaseClient.from('personal_statements').select('*').eq('student_link', studentId).order('updated_at', { ascending: false });
       let statementText = '';
       const processedQNums = new Set();
+      const targetSchoolName = (student.targetSchool || student.target_school || '').trim();
+      
       (statements || []).forEach(row => {
+        const rowSchool = (row.version_label || '').trim();
+        if (rowSchool && rowSchool !== targetSchoolName) return;
+        
         if (row.content && row.content.trim() !== '' && !processedQNums.has(row.question_no)) {
           processedQNums.add(row.question_no);
           
@@ -1497,11 +1507,21 @@ async function getPersonalStatementHistory(payload) {
     const { data: teacherFeedbacks } = await window.supabaseClient.from('teacher_feedbacks').select('*').eq('student_link', studentId);
     (teacherFeedbacks || []).forEach(f => {
       let qNumStr = String(f.question_no);
-      // 피드백은 복합키가 없으므로 현재 타겟 학교의 문항에 우선 매핑
-      let targetKey = targetSchool + '|' + qNumStr;
+      
+      const vLabel = (f.version_label || '').trim();
+      let targetKey;
+      
+      if (vLabel) {
+        // 새로 업데이트된 3단 고유키 방식 (정확히 해당 학교의 탭에 꽂음)
+        targetKey = vLabel + '|' + qNumStr;
+      } else {
+        // 구형 데이터 호환성 유지
+        targetKey = targetSchool + '|' + qNumStr;
+      }
+
       if (currentStateMap[targetKey]) {
         currentStateMap[targetKey].feedback = f.feedback || '';
-      } else {
+      } else if (!vLabel) {
         // 타겟 학교 키가 없으면 동일한 qNum을 가진 아무거나 덮어쓰기 (호환성 유지)
         for (let key in currentStateMap) {
            if (currentStateMap[key].qNum === qNumStr) {
@@ -1576,26 +1596,35 @@ async function savePersonalStatement(payload) {
         }
         newSnapshots[uniqueKey].content = c.text;
       } else if (c.type === '피드백') {
-        feedbackUpdates[c.qNum] = c.text;
+        const tSchool = student ? (student.targetSchool || student.target_school || '') : '';
+        const vLabel = c.version_label || tSchool;
+        const uniqueKey = vLabel + '|' + c.qNum;
+        feedbackUpdates[uniqueKey] = {
+          qNum: c.qNum,
+          vLabel: vLabel,
+          text: c.text
+        };
       }
     });
 
     // 1. 자소서가 변경된 문항은 무조건 새로운 히스토리 행을 insert
-    for (const qNum in newSnapshots) {
-      const row = newSnapshots[qNum];
+    for (const key in newSnapshots) {
+      const row = newSnapshots[key];
       const { error: insErr } = await window.supabaseClient.from('personal_statements').insert(row);
       if (insErr) throw insErr;
     }
 
     // 2. 피드백이 변경된 문항은 teacher_feedbacks 테이블에 upsert
-    for (const qNum in feedbackUpdates) {
+    for (const key in feedbackUpdates) {
+      const fbData = feedbackUpdates[key];
       const fbPayload = {
         student_link: studentId,
-        question_no: qNum,
-        feedback: feedbackUpdates[qNum],
+        question_no: fbData.qNum,
+        version_label: fbData.vLabel,
+        feedback: fbData.text,
         updated_at: now
       };
-      const { error: updErr } = await window.supabaseClient.from('teacher_feedbacks').upsert(fbPayload, { onConflict: 'student_link,question_no' });
+      const { error: updErr } = await window.supabaseClient.from('teacher_feedbacks').upsert(fbPayload, { onConflict: 'student_link,question_no,version_label' });
       if (updErr) throw updErr;
     }
     
