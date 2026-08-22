@@ -83,17 +83,7 @@ window.updatePassStatusFrontend = async function(studentLink, passType, passValu
       const student = STUDENTS_LIST.find(s => String(s.studentLink) === String(studentLink));
       if (student) {
         student[passType] = passValue;
-        if (passType === 'passGifted') {
-          if (passValue === '합') {
-            student.passRound1 = '-';
-            student.passRound2 = '-';
-            student.passFinal = '-';
-          } else if (passValue === '-') {
-            student.passRound1 = '대기';
-            student.passRound2 = '대기';
-            student.passFinal = '대기';
-          }
-        } else if (passType === 'passRound1') {
+        if (passType === 'passRound1') {
           if (passValue === '불') {
             student.passRound2 = '불';
             student.passFinal = '불';
@@ -158,6 +148,9 @@ const ApiClient = {
           break;
         case 'uploadStudentRecordPdf':
           result = await window[action](payload.studentId || payload.studentLink, payload.fileObject, payload.fileName);
+          break;
+        case 'toggleStudentHidden':
+          result = await window[action](payload.studentLink, payload.isHidden);
           break;
         default:
           result = await window[action](payload);
@@ -431,7 +424,21 @@ async function loadStudentsData() {
       ApiClient.post('getStudentsList'),
       window.getAllPsProgress()
     ]);
-    STUDENTS_LIST = studentsRes;
+    
+    if (CURRENT_ROLE === '학생' && CURRENT_STUDENT_ID) {
+      const me = studentsRes.find(s => String(s.studentPhone) === String(CURRENT_STUDENT_ID) || String(s.studentLink) === String(CURRENT_STUDENT_ID));
+      if (me && me.is_hidden) {
+        document.body.innerHTML = '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-size:24px; color:#ef4444; font-weight:bold;">관리자에 의해 시스템 접근이 물리적으로 차단된 상태입니다.</div>';
+        throw new Error('Blocked access by admin.');
+      }
+    }
+    
+    if (CURRENT_ROLE !== '관리자') {
+      STUDENTS_LIST = studentsRes.filter(s => !s.is_hidden);
+    } else {
+      STUDENTS_LIST = studentsRes;
+    }
+    
     PS_PROGRESS_MAP = progressRes;
   } catch (err) {
     console.error('학생 데이터 로드 실패:', err);
@@ -450,7 +457,6 @@ const TABLE_COLUMNS = {
     { label: '학생명', key: 'name' },
     { label: '현재 학교', key: 'school' },
     { label: '지원학교', key: 'targetSchool' },
-    { label: '영재 최종', key: 'passGifted' },
     { label: '1차 합불', key: 'passRound1' },
     { label: '2차 합불', key: 'passRound2' },
     { label: '최종 합불', key: 'passFinal' },
@@ -569,7 +575,7 @@ function renderMainTable() {
     const th = document.createElement('th');
     th.style.textAlign = 'center';
     
-    if (['center', 'name', 'school', 'targetSchool', 'psStatus', 'recordScoreOnly', 'passGifted', 'passRound1', 'passRound2', 'passFinal'].includes(col.key)) {
+    if (['center', 'name', 'school', 'targetSchool', 'psStatus', 'recordScoreOnly', 'passRound1', 'passRound2', 'passFinal'].includes(col.key)) {
       th.style.cursor = 'pointer';
       
       // 기본 상태는 회색 아래쪽 삼각형
@@ -659,6 +665,11 @@ function renderMainTable() {
   
   filtered.forEach(student => {
     const tr = document.createElement('tr');
+    if (student.is_hidden) {
+      tr.style.backgroundColor = 'rgba(255, 0, 0, 0.1)';
+      tr.style.opacity = '0.6';
+      tr.title = '숨김(차단) 처리된 학생입니다.';
+    }
     
     cols.forEach(col => {
       const td = document.createElement('td');
@@ -666,7 +677,7 @@ function renderMainTable() {
       const val = student[col.key];
       
       if (student.isReference) {
-        const blockedKeys = ['passGifted', 'passRound1', 'passRound2', 'passFinal', 'studentLink', 'studentSms', 'psStatus', 'psProgress', 'psViewer', 'interviewRecord', 'interviewPs', 'manage'];
+        const blockedKeys = ['passRound1', 'passRound2', 'passFinal', 'studentLink', 'studentSms', 'psStatus', 'psProgress', 'psViewer', 'interviewRecord', 'interviewPs', 'manage'];
         if (blockedKeys.includes(col.key)) {
           if (CURRENT_MENU === 'dashboard' && col.key === 'manage') {
             // 대시보드 메뉴에서는 manage 컬럼(수정 버튼) 예외 허용
@@ -839,24 +850,20 @@ function renderMainTable() {
           td.innerHTML = `<span class="text-muted">미생성</span>` + btnGen;
         }
       }
-      else if (['passGifted', 'passRound1', 'passRound2', 'passFinal'].includes(col.key)) {
+      else if (['passRound1', 'passRound2', 'passFinal'].includes(col.key)) {
         if (CURRENT_ROLE === '학생') {
            let badgeClass = 'gray';
            if (val === '합') badgeClass = 'success';
            else if (val === '불') badgeClass = 'danger';
            td.innerHTML = `<span class="badge ${badgeClass}">${val}</span>`;
         } else {
-           let isGiftedPass = (student.passGifted === '합');
            let isRound1Fail = (student.passRound1 === '불');
            let isRound2Fail = (student.passRound2 === '불');
            
            let disabled = '';
            let forcedVal = val;
            
-           if (isGiftedPass && col.key !== 'passGifted') {
-             disabled = 'disabled';
-             forcedVal = '-';
-           } else if (isRound1Fail && ['passRound2', 'passFinal'].includes(col.key)) {
+           if (isRound1Fail && ['passRound2', 'passFinal'].includes(col.key)) {
              disabled = 'disabled';
              forcedVal = '불';
            } else if (isRound2Fail && col.key === 'passFinal') {
@@ -870,19 +877,12 @@ function renderMainTable() {
            else if (forcedVal === '불') { statusColor = '#ef4444'; statusIcon = 'fa-circle-xmark'; }
            
            let optionsHtml = '';
-           if (col.key === 'passGifted') {
-             optionsHtml = `
-               <option value="-" ${forcedVal === '-' ? 'selected' : ''}>-</option>
-               <option value="합" ${forcedVal === '합' ? 'selected' : ''}>합</option>
-             `;
-           } else {
-             optionsHtml = `
+           optionsHtml = `
                 <option value="대기" ${forcedVal === '대기' ? 'selected' : ''}>대기</option>
                 <option value="합" ${forcedVal === '합' ? 'selected' : ''}>합</option>
                 <option value="불" ${forcedVal === '불' ? 'selected' : ''}>불</option>
                 <option value="-" ${forcedVal === '-' ? 'selected' : ''} style="display:none;">-</option>
              `;
-           }
            
            td.innerHTML = `
              <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
@@ -968,11 +968,46 @@ function openEditStudent(studentLink) {
     deleteGroup.style.display = 'flex';
     if (CURRENT_ROLE === '관리자') {
       btnHardDelete.style.display = 'block';
+      const btnToggleHidden = document.getElementById('btn-toggle-hidden-student');
+      if (btnToggleHidden) {
+        btnToggleHidden.style.display = 'block';
+        const span = btnToggleHidden.querySelector('span');
+        const icon = btnToggleHidden.querySelector('i');
+        if (student.is_hidden) {
+          span.textContent = '숨김 해제';
+          btnToggleHidden.style.backgroundColor = '#10b981';
+          icon.className = 'fa-solid fa-eye';
+        } else {
+          span.textContent = '숨김 처리';
+          btnToggleHidden.style.backgroundColor = '#64748b';
+          icon.className = 'fa-solid fa-eye-slash';
+        }
+        
+        btnToggleHidden.onclick = function() {
+          const newHidden = !student.is_hidden;
+          const msg = newHidden 
+            ? '이 학생을 숨김 처리하시겠습니까?\n숨김 처리 시 교사 및 학생 본인의 접속이 모두 물리적으로 차단되며 대시보드 리스트에서 가려집니다.' 
+            : '이 학생의 숨김을 해제하시겠습니까?\n다시 정상적으로 노출되며 접근이 허용됩니다.';
+            
+          if (confirm(msg)) {
+            ApiClient.post('toggleStudentHidden', { studentLink: student.studentLink || student.id, isHidden: newHidden }, { hideLoader: false }).then(res => {
+              if (res && (res.success || res === true)) { // 백엔드 로직에 따라 res.success가 없을수도있음
+                alert('처리되었습니다.');
+                student.is_hidden = newHidden;
+                document.getElementById('modal-register').style.display = 'none';
+                loadStudentsData(); // 데이터 재로드 및 렌더링
+              } else {
+                alert('처리 실패: ' + (res.error || '알 수 없는 오류'));
+              }
+            });
+          }
+        };
+      }
     } else {
       btnHardDelete.style.display = 'none';
+      const btnToggleHidden = document.getElementById('btn-toggle-hidden-student');
+      if (btnToggleHidden) btnToggleHidden.style.display = 'none';
     }
-    
-    document.getElementById('btn-archive-student').style.display = 'none';
     
     btnHardDelete.onclick = function() {
       if(confirm('정말 삭제하시겠습니까? 구글 드라이브의 자소서 파일, 생기부 PDF, 생기부 AI 산출근거, 메인 행까지 모두 완벽하게 영구 삭제됩니다.\n\n이 작업은 절대 되돌릴 수 없습니다!')) {

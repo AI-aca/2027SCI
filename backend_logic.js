@@ -1318,6 +1318,8 @@ async function getStudentsList() {
         }
         
         return {
+          id: s.id,
+          is_hidden: s.is_hidden || false,
           center: s.center_name || '',
           name: s.student_name || '',
           school: s.school || '',
@@ -1335,7 +1337,6 @@ async function getStudentsList() {
           questions: (s.expected_questions_ai_ps || '') + '|' + (s.expected_questions_ai_record || '') || (s.expected_questions_ai || ''),
           studentAnswers: practiceMap[s.student_link || s.id] || '',
           isParsed: parsedSet.has(s.student_link || s.id),
-          passGifted: (s.result_gifted === '합' ? '합' : '-'),
           passRound1: s.result_1st || '대기',
           passRound2: s.result_2nd || '대기',
           passFinal: s.result_final || '대기',
@@ -1349,22 +1350,23 @@ async function getStudentsList() {
     }
 }
 
+// 학생 숨김 처리 상태 토글
+async function toggleStudentHidden(studentLink, isHidden) {
+  try {
+    const { error } = await window.supabaseClient.from('students').update({ is_hidden: isHidden }).eq('student_link', studentLink);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.error('toggleStudentHidden error:', err);
+    throw err;
+  }
+}
+
 // 학생 상태 변경(합불)
 async function updatePassStatus(payload) {
   try {
     let updates = {};
-    if (payload.passType === 'passGifted') {
-      updates['result_gifted'] = payload.passValue;
-      if (payload.passValue === '합') {
-        updates['result_1st'] = '-';
-        updates['result_2nd'] = '-';
-        updates['result_final'] = '-';
-      } else if (payload.passValue === '-') {
-        updates['result_1st'] = '대기';
-        updates['result_2nd'] = '대기';
-        updates['result_final'] = '대기';
-      }
-    } else if (payload.passType === 'passRound1') {
+    if (payload.passType === 'passRound1') {
       updates['result_1st'] = payload.passValue;
       if (payload.passValue === '불') {
         updates['result_2nd'] = '불';
@@ -2025,6 +2027,7 @@ async function resetAIQuestions(payload) {
 window.verifyPassword = verifyPassword;
 window.getSettings = getSettings;
 window.getStudentsList = getStudentsList;
+window.toggleStudentHidden = toggleStudentHidden;
 window.updatePassStatus = updatePassStatus;
 window.getPersonalStatementHistory = getPersonalStatementHistory;
 window.savePersonalStatement = savePersonalStatement;
