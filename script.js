@@ -1154,7 +1154,8 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual', ta
       let fullQuestionText = "";
       
       const opt = document.createElement('option');
-      opt.value = shortLabel;
+      const compositeKey = studentSchool + '|' + shortLabel;
+      opt.value = compositeKey;
       // OS 다크모드 렌더링 충돌 방지를 위해 JS 인라인 스타일을 다시 강제 주입 (캐시 무시)
       opt.style.backgroundColor = '#1e293b';
       opt.style.color = '#f8fafc';
@@ -1187,8 +1188,8 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual', ta
     const maxQNum = questions.length;
     questions.forEach((q, idx) => {
       const qVal = q.label.trim();
-      if (!historyData.current.find(c => String(c.qNum) === String(qVal))) {
-        historyData.current.push({ qNum: qVal, text: '', feedback: '' });
+      if (!historyData.current.find(c => String(c.qNum) === String(qVal) && c.version_label === studentSchool)) {
+        historyData.current.push({ qNum: qVal, text: '', feedback: '', version_label: studentSchool });
       }
     });
     
@@ -1196,7 +1197,7 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual', ta
     const validLabels = questions.map(q => q.label.trim());
     historyData.current = historyData.current.filter(c => {
       if (c.version_label === '최신') return false;
-      if (!isNaN(c.qNum)) return validLabels.includes(String(c.qNum));
+      if (!isNaN(c.qNum) && c.version_label === studentSchool) return validLabels.includes(String(c.qNum));
       return true;
     });
     
@@ -1207,10 +1208,11 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual', ta
     // 타학교 미아 데이터 드롭다운 꼬리표 추가
     historyData.current.forEach(curr => {
       if (curr.version_label && curr.version_label !== studentSchool) {
-        const exists = Array.from(psSelector.options).some(o => o.value === String(curr.qNum));
+        const compositeKey = curr.version_label + '|' + curr.qNum;
+        const exists = Array.from(psSelector.options).some(o => o.value === compositeKey);
         if (!exists) {
           const opt = document.createElement('option');
-          opt.value = String(curr.qNum);
+          opt.value = compositeKey;
           opt.style.backgroundColor = '#1e293b';
           opt.style.color = '#f8fafc';
           let displayQNum = String(curr.qNum).startsWith('문항') ? String(curr.qNum) : `문항 ${curr.qNum}`;
@@ -1222,10 +1224,12 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual', ta
     });
     
     // 문항 셀렉트 로드 (보고 있던 문항 번호가 있으면 우선 복구)
-    let defaultQNum = psSelector.options.length > 0 ? psSelector.options[0].value : '문항1-1';
+    let defaultQNum = psSelector.options.length > 0 ? psSelector.options[0].value : (studentSchool + '|문항 1');
     if (targetQNum) {
-      const exists = Array.from(psSelector.options).some(o => o.value === String(targetQNum));
-      if (exists) defaultQNum = targetQNum;
+      // targetQNum이 복합키가 아니라 단순 '문항 1'로 올 수 있으므로 보정
+      let searchKey = targetQNum.includes('|') ? targetQNum : (studentSchool + '|' + targetQNum);
+      const exists = Array.from(psSelector.options).some(o => o.value === searchKey);
+      if (exists) defaultQNum = searchKey;
     }
     psSelector.value = defaultQNum;
     bindPersonalStatementToSelector(defaultQNum);
@@ -1405,17 +1409,20 @@ function renderChecklistToHTML(jsonString) {
 /**
  * 특정 문항을 선택했을 때 자소서 및 수기 피드백 내용을 바인드
  */
-function bindPersonalStatementToSelector(qNum) {
+function bindPersonalStatementToSelector(compositeQNum) {
   const hData = window.PS_CURRENT_HISTORY;
   if (!hData) return;
   
+  const uiTargetSchool = document.getElementById('ps-school-name').textContent.replace('지원 학교: ', '');
+  const [targetSchoolKey, targetQNumKey] = compositeQNum.includes('|') ? compositeQNum.split('|') : [uiTargetSchool, compositeQNum];
+  
   // 최신 자소서 로드
-  const curr = hData.current.find(c => String(c.qNum) == String(qNum));
+  const curr = hData.current.find(c => String(c.qNum) == String(targetQNumKey) && (c.version_label === targetSchoolKey || (!c.version_label && targetSchoolKey === uiTargetSchool)));
   const textVal = curr ? curr.text : '';
   const feedbackVal = curr ? curr.feedback : '';
   
-  // 글자 수 헬퍼 함수
-  const targetSchool = document.getElementById('ps-school-name').textContent.replace('지원 학교: ', '');
+  // 글자 수 헬퍼 함수 사용 시 원본 targetSchool 대신 데이터의 소속 학교를 사용해야 함
+  const targetSchool = targetSchoolKey;
   
   // 질문 텍스트 표시
   const psSel = document.getElementById('ps-question-selector');
@@ -1457,7 +1464,7 @@ function bindPersonalStatementToSelector(qNum) {
   const countWrap = document.getElementById('ps-main-char-counter-wrap');
   
   const schoolMap = window.SCHOOL_QUESTIONS_MAP || [];
-  const matchedSchool = schoolMap.find(s => s.name === targetSchool);
+  const matchedSchool = schoolMap.find(s => s.name === uiTargetSchool);
   const qData = matchedSchool && matchedSchool.questions ? matchedSchool.questions.find(q => {
     return q.label.trim() === String(qNum).trim();
   }) : null;
@@ -2449,7 +2456,10 @@ function bindEventHandlers() {
 
     // 현재 포커스된 창의 최신 내용도 확실하게 한 번 더 hData에 동기화
     const qNum = document.getElementById('ps-question-selector').value;
-    const currActive = hData.current.find(c => c.qNum == qNum);
+    const uiTargetSchool = document.getElementById('ps-school-name').textContent.replace('지원 학교: ', '');
+    const [tSchool, tQNum] = qNum.includes('|') ? qNum.split('|') : [uiTargetSchool, qNum];
+    
+    const currActive = hData.current.find(c => String(c.qNum) == String(tQNum) && (c.version_label === tSchool || (!c.version_label && tSchool === uiTargetSchool)));
     if (currActive) {
       currActive.text = window.getCurrentPsText ? window.getCurrentPsText(false) : document.getElementById('ps-content-textarea').value;
       currActive.feedback = document.getElementById('manual-feedback-textarea').value;
@@ -2462,13 +2472,14 @@ function bindEventHandlers() {
     
     // 모든 문항을 순회하며 원본과 달라진 부분만 추출 (일괄 저장)
     hData.current.forEach(curr => {
-      const orig = origData.find(o => o.qNum === curr.qNum);
+      const orig = origData.find(o => o.qNum === curr.qNum && o.version_label === curr.version_label);
       const oldPs = orig ? orig.text : '';
       const oldFb = orig ? orig.feedback : '';
       
       let displayName = curr.qNum;
       if (qSelector) {
-        const matchedOpt = Array.from(qSelector.options).find(o => o.value === String(curr.qNum));
+        const compositeKey = curr.version_label ? (curr.version_label + '|' + curr.qNum) : (uiTargetSchool + '|' + curr.qNum);
+        const matchedOpt = Array.from(qSelector.options).find(o => o.value === compositeKey);
         if (matchedOpt) displayName = matchedOpt.textContent.trim();
       }
       
@@ -2478,7 +2489,7 @@ function bindEventHandlers() {
         
         if (isChanged && !isEmpty) {
           reportMsg += `✅ ${displayName} : 내용 수정됨 (저장 대기)\n`;
-          contents.push({ qNum: curr.qNum, text: curr.text, type: '자소서' });
+          contents.push({ qNum: curr.qNum, text: curr.text, type: '자소서', version_label: curr.version_label });
           validSaveCount++;
         } else if (!isChanged && !isEmpty) {
           reportMsg += `➖ ${displayName} : 변경 없음 (기존 유지)\n`;
@@ -2490,7 +2501,7 @@ function bindEventHandlers() {
       } else {
         if (curr.feedback !== oldFb) {
           reportMsg += `✅ ${displayName} : 피드백 내용 수정됨 (저장 대기)\n`;
-          contents.push({ qNum: curr.qNum, text: curr.feedback, type: '피드백' });
+          contents.push({ qNum: curr.qNum, text: curr.feedback, type: '피드백', version_label: curr.version_label });
           validSaveCount++;
         } else {
           reportMsg += `➖ ${displayName} : 피드백 변경 없음 (기존 유지)\n`;

@@ -1450,23 +1450,25 @@ async function getPersonalStatementHistory(payload) {
         qText = qMap[qNumStr] || qMap['문항' + qNumStr] || '';
       }
       
-      if (!currentStateMap[s.question_no]) {
-        currentStateMap[s.question_no] = {
+      const uniqueKey = (s.version_label || '') + '|' + s.question_no;
+
+      if (!currentStateMap[uniqueKey]) {
+        currentStateMap[uniqueKey] = {
           qNum: s.question_no, question: qText, answer: '', text: '', feedback: '', length: 0, version_label: s.version_label, id: s.id
         };
       }
       
       // 값이 null이 아닐 때만 덮어쓰기 (자소서/피드백 중 변경된 것만 들어오므로)
       if (s.content !== null && s.content !== undefined) {
-        currentStateMap[s.question_no].text = s.content;
-        currentStateMap[s.question_no].answer = s.content;
-        currentStateMap[s.question_no].length = s.content.length;
-        currentStateMap[s.question_no].version_label = s.version_label;
-        currentStateMap[s.question_no].id = s.id;
+        currentStateMap[uniqueKey].text = s.content;
+        currentStateMap[uniqueKey].answer = s.content;
+        currentStateMap[uniqueKey].length = s.content.length;
+        currentStateMap[uniqueKey].version_label = s.version_label;
+        currentStateMap[uniqueKey].id = s.id;
       }
       // 과거 기록 호환성 유지 (구버전 피드백)
       if (s.teacher_feedback !== null && s.teacher_feedback !== undefined) {
-        currentStateMap[s.question_no].feedback = s.teacher_feedback;
+        currentStateMap[uniqueKey].feedback = s.teacher_feedback;
       }
 
       // 스냅샷 그룹화 (동일한 저장 시점)
@@ -1490,8 +1492,17 @@ async function getPersonalStatementHistory(payload) {
     const { data: teacherFeedbacks } = await window.supabaseClient.from('teacher_feedbacks').select('*').eq('student_link', studentId);
     (teacherFeedbacks || []).forEach(f => {
       let qNumStr = String(f.question_no);
-      if (currentStateMap[qNumStr]) {
-        currentStateMap[qNumStr].feedback = f.feedback || '';
+      // 피드백은 복합키가 없으므로 현재 타겟 학교의 문항에 우선 매핑
+      let targetKey = targetSchool + '|' + qNumStr;
+      if (currentStateMap[targetKey]) {
+        currentStateMap[targetKey].feedback = f.feedback || '';
+      } else {
+        // 타겟 학교 키가 없으면 동일한 qNum을 가진 아무거나 덮어쓰기 (호환성 유지)
+        for (let key in currentStateMap) {
+           if (currentStateMap[key].qNum === qNumStr) {
+               currentStateMap[key].feedback = f.feedback || '';
+           }
+        }
       }
     });
 
@@ -1546,16 +1557,19 @@ async function savePersonalStatement(payload) {
 
     contents.forEach(c => {
       if (c.type === '자소서') {
-        if (!newSnapshots[c.qNum]) {
-          const tSchool = student ? (student.targetSchool || student.target_school || '') : '';
-          newSnapshots[c.qNum] = {
+        const tSchool = student ? (student.targetSchool || student.target_school || '') : '';
+        const vLabel = c.version_label || tSchool;
+        const uniqueKey = vLabel + '|' + c.qNum;
+        
+        if (!newSnapshots[uniqueKey]) {
+          newSnapshots[uniqueKey] = {
             student_link: studentId,
             question_no: c.qNum,
-            version_label: tSchool,
+            version_label: vLabel,
             updated_at: now
           };
         }
-        newSnapshots[c.qNum].content = c.text;
+        newSnapshots[uniqueKey].content = c.text;
       } else if (c.type === '피드백') {
         feedbackUpdates[c.qNum] = c.text;
       }
