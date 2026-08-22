@@ -1430,7 +1430,12 @@ function bindPersonalStatementToSelector(compositeQNum) {
   const [targetSchoolKey, targetQNumKey] = compositeQNum.includes('|') ? compositeQNum.split('|') : [uiTargetSchool, compositeQNum];
   
   // 최신 자소서 로드
-  const curr = hData.current.find(c => window.normalizeQNum(c.qNum) === window.normalizeQNum(targetQNumKey) && (c.version_label === targetSchoolKey || (!c.version_label && targetSchoolKey === uiTargetSchool)));
+  const curr = hData.current.find(c => {
+    const cleanV = (c.version_label || '').trim();
+    const cleanT = (targetSchoolKey || '').trim();
+    const cleanUi = (uiTargetSchool || '').trim();
+    return window.normalizeQNum(c.qNum) === window.normalizeQNum(targetQNumKey) && (cleanV === cleanT || (!cleanV && cleanT === cleanUi));
+  });
   const textVal = curr ? curr.text : '';
   const feedbackVal = curr ? curr.feedback : '';
   
@@ -1662,7 +1667,12 @@ function bindPersonalStatementToSelector(compositeQNum) {
     
     let lastText = '';
     historyList.forEach((h, index) => {
-      const textObj = h.texts.find(t => window.normalizeQNum(t.qNum) === window.normalizeQNum(targetQNumKey) && (t.version_label === targetSchoolKey || (!t.version_label && targetSchoolKey === uiTargetSchool)));
+      const textObj = h.texts.find(t => {
+        const cleanV = (t.version_label || '').trim();
+        const cleanT = (targetSchoolKey || '').trim();
+        const cleanUi = (uiTargetSchool || '').trim();
+        return window.normalizeQNum(t.qNum) === window.normalizeQNum(targetQNumKey) && (cleanV === cleanT || (!cleanV && cleanT === cleanUi));
+      });
       if (textObj && textObj.text && textObj.text !== lastText) {
         const opt = document.createElement('option');
         opt.value = textObj.text;
