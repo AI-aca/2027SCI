@@ -93,6 +93,7 @@ async function generateAIChecklist(studentLink, qNum, statementText) {
     // 1. 해당 학생의 지원 학교 및 문항 내용 조회
     let qContent = '';
     let adminReqText = '';
+    const parsedQNum = qNum.includes('|') ? qNum.split('|')[1] : qNum;
     const { data: student } = await window.supabaseClient.from('students').select('*').eq('student_link', studentLink).single();
     if (student) {
       const tSchool = student.targetSchool || student.target_school;
@@ -102,7 +103,7 @@ async function generateAIChecklist(studentLink, qNum, statementText) {
           const schoolsData = JSON.parse(settingsRow.setting_value);
           const matchedSchool = schoolsData.find(s => s.name === tSchool);
           if (matchedSchool && matchedSchool.questions) {
-            let qRow = matchedSchool.questions.find(q => String(q.label) === String(qNum));
+            let qRow = matchedSchool.questions.find(q => String(q.label) === String(parsedQNum));
             if (qRow) {
               qContent = qRow.content || '';
               if (qRow.details && qRow.details.length > 0) {
@@ -123,7 +124,7 @@ async function generateAIChecklist(studentLink, qNum, statementText) {
     }
     let systemPrompt = fbPromptData.setting_value;
     
-    let userPrompt = `[문항 ${qNum}번 정보]\n`;
+    let userPrompt = `[문항 ${parsedQNum}번 정보]\n`;
     if (qContent) userPrompt += `질문: ${qContent}\n\n`;
     if (adminReqText) {
       userPrompt += `[관리자 요구조건]:\n${adminReqText}\n\n`;
@@ -135,13 +136,14 @@ async function generateAIChecklist(studentLink, qNum, statementText) {
     
     const feedbackText = await callGeminiWithFallback(systemPrompt, userPrompt, ['gemini-3.6-flash', 'gemini-3.5-flash']);
     
+    const targetType = '문항[' + qNum + ']_체크리스트';
     const fbPayload = {
       student_link: studentLink,
-      type: '문항' + qNum + '_체크리스트',
+      type: targetType,
       feedback: feedbackText,
       created_at: new Date().toISOString()
     };
-    await window.supabaseClient.from('ai_feedback_history').delete().eq('student_link', studentLink).eq('type', '문항' + qNum + '_체크리스트');
+    await window.supabaseClient.from('ai_feedback_history').delete().eq('student_link', studentLink).eq('type', targetType);
     const { error: fbErr } = await window.supabaseClient.from('ai_feedback_history').insert(fbPayload);
     if (fbErr) throw new Error('체크리스트 저장 실패: ' + fbErr.message);
     
@@ -170,7 +172,8 @@ async function generateAIFeedback(studentId, qNum, statementText) {
     const { data: fbPromptData } = await window.supabaseClient.from('settings').select('setting_value').eq('setting_key', 'prompt_feedback').single();
     let baseSystemPrompt = fbPromptData ? fbPromptData.setting_value : "당신은 최고 수준의 입시 컨설턴트입니다.";
     
-    const cleanQNum = String(qNum).replace(/^문항\s*/, '');
+    const parsedQNum = qNum.includes('|') ? qNum.split('|')[1] : qNum;
+    const cleanQNum = String(parsedQNum).replace(/^문항\s*/, '');
     const formatConstraint = `\n\n🚨[출력 서식 및 어투 강제 규칙 - 반드시 지킬 것]
 이 출력은 학생의 자기소개서 [문항 ${cleanQNum}]에 대한 피드백입니다.
 당신에게 부여된 기존의 프롬프트 지시사항(평가 기준 등)을 모두 따르되, **최종 출력물의 형태는 반드시 아래의 4가지 항목으로만 구성된 마크다운(Markdown) 형식**이어야 합니다. (기존의 '종합 총평' 등 다른 임의의 항목은 절대 생성하지 마세요)
@@ -199,7 +202,7 @@ async function generateAIFeedback(studentId, qNum, statementText) {
     let formattedStatement = statementText.replace(/\[상세분할\]/g, '\n\n');
     
     let userPrompt = `[학생명]: ${student.name}\n[지원 학교]: ${student.targetSchool}\n`;
-    userPrompt += `[문항 ${qNum}번 정보]\n`;
+    userPrompt += `[문항 ${parsedQNum}번 정보]\n`;
     if (qContent) userPrompt += `질문: ${qContent}\n\n`;
     userPrompt += `[학생 작성 내용]:\n${formattedStatement}`;
     
@@ -210,7 +213,7 @@ async function generateAIFeedback(studentId, qNum, statementText) {
       safeFeedback = "'" + safeFeedback;
     }
     
-    const targetType = '문항' + qNum + '_도움받기';
+    const targetType = '문항[' + qNum + ']_도움받기';
     await window.supabaseClient.from('ai_feedback_history').delete().eq('student_link', studentId).eq('type', targetType);
     const fbPayload = {
       student_link: studentId,

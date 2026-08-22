@@ -1289,8 +1289,13 @@ function switchTab(tabId) {
     const resetFbBtn = document.getElementById('btn-reset-ai-feedback');
     if (resetFbBtn) resetFbBtn.style.display = (CURRENT_ROLE === '관리자') ? 'inline-block' : 'none';
     const qNum = document.getElementById('ps-question-selector').value;
-    const currentType = '문항' + qNum + '_도움받기';
-    const targetAILogs = aiLog.filter(log => log.type === currentType);
+    const newType = '문항[' + qNum + ']_도움받기';
+    const fallbackQNum = qNum.includes('|') ? qNum.split('|')[1] : qNum;
+    const legacyType = '문항' + fallbackQNum + '_도움받기';
+    let targetAILogs = aiLog.filter(log => log.type === newType);
+    if (targetAILogs.length === 0) {
+      targetAILogs = aiLog.filter(log => log.type === legacyType);
+    }
     const dateEl = document.getElementById('ai-feedback-date-text');
     if (targetAILogs.length > 0) {
       const lastLog = targetAILogs[targetAILogs.length - 1];
@@ -1585,8 +1590,13 @@ function bindPersonalStatementToSelector(compositeQNum) {
   const checklistContainer = document.getElementById('ai-checklist-container');
   if (checklistContainer) {
     const aiLogs = hData.aiHistory || [];
-    const targetType = '문항' + qNum + '_체크리스트';
-    const matchingLogs = aiLogs.filter(log => log.type === targetType);
+    const newType = '문항[' + qNum + ']_체크리스트';
+    const fallbackQNum = qNum.includes('|') ? qNum.split('|')[1] : qNum;
+    const legacyType = '문항' + fallbackQNum + '_체크리스트';
+    let matchingLogs = aiLogs.filter(log => log.type === newType);
+    if (matchingLogs.length === 0) {
+      matchingLogs = aiLogs.filter(log => log.type === legacyType);
+    }
     if (matchingLogs.length > 0) {
       const lastLog = matchingLogs[matchingLogs.length - 1];
       checklistContainer.innerHTML = renderChecklistToHTML(lastLog.feedback);
@@ -1610,8 +1620,13 @@ function bindPersonalStatementToSelector(compositeQNum) {
   const aiDateEl = document.getElementById('ai-feedback-date-text');
   if (aiContainer) {
     const aiLog = hData.aiHistory || [];
-    const currentType = '문항' + qNum + '_도움받기';
-    const targetAILogs = aiLog.filter(log => log.type === currentType);
+    const newType = '문항[' + qNum + ']_도움받기';
+    const fallbackQNum = qNum.includes('|') ? qNum.split('|')[1] : qNum;
+    const legacyType = '문항' + fallbackQNum + '_도움받기';
+    let targetAILogs = aiLog.filter(log => log.type === newType);
+    if (targetAILogs.length === 0) {
+      targetAILogs = aiLog.filter(log => log.type === legacyType);
+    }
     if (targetAILogs.length > 0) {
       const lastLog = targetAILogs[targetAILogs.length - 1];
       aiContainer.innerHTML = parseMarkdown(lastLog.feedback);
@@ -2615,7 +2630,7 @@ function bindEventHandlers() {
       if (!ACTIVE_PS_STUDENT) return;
       if (!confirm('현재 문항의 AI 체크리스트를 초기화(삭제) 하시겠습니까?')) return;
       const qNum = document.getElementById('ps-question-selector').value;
-      const typeStr = '문항' + qNum + '_체크리스트';
+      const typeStr = '문항[' + qNum + ']_체크리스트';
       const res = await ApiClient.post('resetAIFeedback', { studentId: ACTIVE_PS_STUDENT, typeStr });
       if (res.success) {
          document.getElementById('ai-checklist-container').innerHTML = '<div style="color: var(--text-muted); text-align: center; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; line-height: 1.6; word-break: keep-all; padding: 10px;">🚫 기재하면 절대 안되는 사항이나<br>질문의 핵심요점과 어울리지 않는지 등을 체크합니다.<br><br>📝 적어도 자소서 초안이 입력되어야만,<br>선생님들이 확인하여 작성할 수 있습니다.</div>';
@@ -2635,7 +2650,7 @@ function bindEventHandlers() {
       if (!ACTIVE_PS_STUDENT) return;
       if (!confirm('현재 문항의 AI 피드백을 초기화(삭제) 하시겠습니까?')) return;
       const qNum = document.getElementById('ps-question-selector').value;
-      const typeStr = '문항' + qNum + '_도움받기';
+      const typeStr = '문항[' + qNum + ']_도움받기';
       const res = await ApiClient.post('resetAIFeedback', { studentId: ACTIVE_PS_STUDENT, typeStr });
       if (res.success) {
          document.getElementById('ai-feedback-container').innerHTML = '<div style="color: var(--text-muted); padding: 20px; text-align: center;">[AI 피드백 로드 대기 중...]</div>';
@@ -3977,7 +3992,7 @@ window.generateChecklist = async function() {
       if (window.PS_CURRENT_HISTORY) {
         if (!window.PS_CURRENT_HISTORY.aiHistory) window.PS_CURRENT_HISTORY.aiHistory = [];
         window.PS_CURRENT_HISTORY.aiHistory.push({
-          type: '문항' + qNum + '_체크리스트',
+          type: '문항[' + qNum + ']_체크리스트',
           feedback: res.checklist,
           timestamp: new Date().toISOString()
         });
