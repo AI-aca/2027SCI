@@ -1138,6 +1138,11 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual', ta
     feedbackTextarea.style.background = "rgba(0, 0, 0, 0.2)";
   }
   
+  window.normalizeQNum = function(str) {
+    if (!str) return '';
+    return String(str).replace(/^문항\s*/, '').replace(/\s+/g, '').trim();
+  };
+  
   // 동적 질문 바인딩 (학교별 맞춤 문항 연동)
   const schoolMap = window.SCHOOL_QUESTIONS_MAP || [];
   const studentSchool = student.targetSchool || '';
@@ -1188,7 +1193,7 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual', ta
     const maxQNum = questions.length;
     questions.forEach((q, idx) => {
       const qVal = q.label.trim();
-      if (!historyData.current.find(c => String(c.qNum) === String(qVal) && c.version_label === studentSchool)) {
+      if (!historyData.current.find(c => window.normalizeQNum(c.qNum) === window.normalizeQNum(qVal) && c.version_label === studentSchool)) {
         historyData.current.push({ qNum: qVal, text: '', feedback: '', version_label: studentSchool });
       }
     });
@@ -1422,7 +1427,7 @@ function bindPersonalStatementToSelector(compositeQNum) {
   const [targetSchoolKey, targetQNumKey] = compositeQNum.includes('|') ? compositeQNum.split('|') : [uiTargetSchool, compositeQNum];
   
   // 최신 자소서 로드
-  const curr = hData.current.find(c => String(c.qNum) == String(targetQNumKey) && (c.version_label === targetSchoolKey || (!c.version_label && targetSchoolKey === uiTargetSchool)));
+  const curr = hData.current.find(c => window.normalizeQNum(c.qNum) === window.normalizeQNum(targetQNumKey) && (c.version_label === targetSchoolKey || (!c.version_label && targetSchoolKey === uiTargetSchool)));
   const textVal = curr ? curr.text : '';
   const feedbackVal = curr ? curr.feedback : '';
   
@@ -1471,7 +1476,7 @@ function bindPersonalStatementToSelector(compositeQNum) {
   const schoolMap = window.SCHOOL_QUESTIONS_MAP || [];
   const matchedSchool = schoolMap.find(s => s.name === targetSchoolKey);
   const qData = matchedSchool && matchedSchool.questions ? matchedSchool.questions.find(q => {
-    return q.label.trim() === String(targetQNumKey).trim();
+    return window.normalizeQNum(q.label) === window.normalizeQNum(targetQNumKey);
   }) : null;
   const details = qData && qData.details ? qData.details : [];
 
@@ -1536,7 +1541,7 @@ function bindPersonalStatementToSelector(compositeQNum) {
          const [tSchool, tQNum] = currentQNum.includes('|') ? currentQNum.split('|') : [uiTargetSchool, currentQNum];
          const hData = window.PS_CURRENT_HISTORY;
          if (hData && hData.current) {
-           const curr = hData.current.find(c => String(c.qNum) == String(tQNum) && (c.version_label === tSchool || (!c.version_label && tSchool === uiTargetSchool)));
+           const curr = hData.current.find(c => window.normalizeQNum(c.qNum) === window.normalizeQNum(tQNum) && (c.version_label === tSchool || (!c.version_label && tSchool === uiTargetSchool)));
            if (curr) {
              curr.text = combined;
              isPsDirty = true;
@@ -1654,7 +1659,7 @@ function bindPersonalStatementToSelector(compositeQNum) {
     
     let lastText = '';
     historyList.forEach((h, index) => {
-      const textObj = h.texts.find(t => String(t.qNum) === String(targetQNumKey) && (t.version_label === targetSchoolKey || (!t.version_label && targetSchoolKey === uiTargetSchool)));
+      const textObj = h.texts.find(t => window.normalizeQNum(t.qNum) === window.normalizeQNum(targetQNumKey) && (t.version_label === targetSchoolKey || (!t.version_label && targetSchoolKey === uiTargetSchool)));
       if (textObj && textObj.text && textObj.text !== lastText) {
         const opt = document.createElement('option');
         opt.value = textObj.text;
@@ -2444,7 +2449,7 @@ function bindEventHandlers() {
     const [tSchool, tQNum] = qNum.includes('|') ? qNum.split('|') : [uiTargetSchool, qNum];
     const hData = window.PS_CURRENT_HISTORY;
     if (hData && hData.current) {
-      const curr = hData.current.find(c => String(c.qNum) == String(tQNum) && (c.version_label === tSchool || (!c.version_label && tSchool === uiTargetSchool)));
+      const curr = hData.current.find(c => window.normalizeQNum(c.qNum) === window.normalizeQNum(tQNum) && (c.version_label === tSchool || (!c.version_label && tSchool === uiTargetSchool)));
       if (curr) {
         curr.text = e.target.value;
         isPsDirty = true;
@@ -2459,7 +2464,7 @@ function bindEventHandlers() {
     const [tSchool, tQNum] = qNum.includes('|') ? qNum.split('|') : [uiTargetSchool, qNum];
     const hData = window.PS_CURRENT_HISTORY;
     if (hData && hData.current) {
-      const curr = hData.current.find(c => String(c.qNum) == String(tQNum) && (c.version_label === tSchool || (!c.version_label && tSchool === uiTargetSchool)));
+      const curr = hData.current.find(c => window.normalizeQNum(c.qNum) === window.normalizeQNum(tQNum) && (c.version_label === tSchool || (!c.version_label && tSchool === uiTargetSchool)));
       if (curr) {
         curr.feedback = e.target.value;
         isPsDirty = true;
@@ -2480,7 +2485,7 @@ function bindEventHandlers() {
     const uiTargetSchool = document.getElementById('ps-school-name').textContent.replace('지원 학교: ', '');
     const [tSchool, tQNum] = qNum.includes('|') ? qNum.split('|') : [uiTargetSchool, qNum];
     
-    const currActive = hData.current.find(c => String(c.qNum) == String(tQNum) && (c.version_label === tSchool || (!c.version_label && tSchool === uiTargetSchool)));
+    const currActive = hData.current.find(c => window.normalizeQNum(c.qNum) === window.normalizeQNum(tQNum) && (c.version_label === tSchool || (!c.version_label && tSchool === uiTargetSchool)));
     if (currActive) {
       currActive.text = window.getCurrentPsText ? window.getCurrentPsText(false) : document.getElementById('ps-content-textarea').value;
       currActive.feedback = document.getElementById('manual-feedback-textarea').value;
