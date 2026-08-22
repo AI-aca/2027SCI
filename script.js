@@ -1193,18 +1193,21 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual', ta
     const maxQNum = questions.length;
     questions.forEach((q, idx) => {
       const qVal = q.label.trim();
-      if (!historyData.current.find(c => window.normalizeQNum(c.qNum) === window.normalizeQNum(qVal) && c.version_label === studentSchool)) {
+      if (!historyData.current.find(c => window.normalizeQNum(c.qNum) === window.normalizeQNum(qVal))) {
         historyData.current.push({ qNum: qVal, text: '', feedback: '', version_label: studentSchool });
       }
     });
     
     // 쓰레기 데이터 원천 필터링 (과거 버그로 생성된 1, 2, '최신' 등 껍데기 유령 데이터 차단)
+    // 쓰레기 데이터 원천 필터링 로직 통째로 무력화 (진짜 데이터 증발 위험 차단)
+    /*
     const validLabels = questions.map(q => q.label.trim());
     historyData.current = historyData.current.filter(c => {
       if (c.version_label === '최신') return false;
       if (!isNaN(c.qNum) && c.version_label === studentSchool) return validLabels.some(v => window.normalizeQNum(v) === window.normalizeQNum(c.qNum));
       return true;
     });
+    */
     
     // 글로벌에 데이터 홀드
     window.PS_CURRENT_HISTORY = historyData;
