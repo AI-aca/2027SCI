@@ -2079,7 +2079,7 @@ async function getAllPsProgress() {
     while (true) {
       const { data: statements, error } = await window.supabaseClient
         .from('personal_statements')
-        .select('student_link, question_no, content, updated_at')
+        .select('student_link, question_no, content, updated_at, version_label') // version_label 추가
         .order('updated_at', { ascending: true })
         .range(from, from + pageSize - 1);
         
@@ -2093,13 +2093,17 @@ async function getAllPsProgress() {
     allStatements.forEach(row => {
       if (!progressMap[row.student_link]) progressMap[row.student_link] = {};
       
+      const vLabel = (row.version_label || '').trim();
+      if (!progressMap[row.student_link][vLabel]) progressMap[row.student_link][vLabel] = {};
+      
       // Null 방어: 실제 텍스트가 있을 때만 덮어쓰기
       if (row.content !== null && row.content !== undefined) {
         // 타입 충돌 방지를 위해 강제 String 캐스팅 후 태그 제거
         const cleanText = String(row.content).replace(/\[상세분할\]/g, '');
         const noSpaceText = cleanText.replace(/\s+/g, '');
         
-        progressMap[row.student_link][row.question_no] = {
+        // 3단 구조로 덮어쓰기 (student_link -> version_label -> question_no)
+        progressMap[row.student_link][vLabel][row.question_no] = {
           withSpace: cleanText.length,
           noSpace: noSpaceText.length
         };

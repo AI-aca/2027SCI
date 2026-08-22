@@ -763,10 +763,19 @@ function renderMainTable() {
             totalLimit += qLimit;
             
             const qNum = String(q.label).trim();
+            const tSchool = (student.targetSchool || '').trim();
             let written = 0;
-            if (PS_PROGRESS_MAP && PS_PROGRESS_MAP[student.studentLink] && PS_PROGRESS_MAP[student.studentLink][qNum]) {
-              const counts = PS_PROGRESS_MAP[student.studentLink][qNum];
-              written = includeSpaces ? counts.withSpace : counts.noSpace;
+            
+            if (PS_PROGRESS_MAP && PS_PROGRESS_MAP[student.studentLink]) {
+              const studentProgress = PS_PROGRESS_MAP[student.studentLink];
+              // 1. 현재 타겟 학교 꼬리표가 붙은 최신 데이터 우선 조회
+              // 2. 없으면 과거 마이그레이션 예외 처리된 꼬리표 없는('') 데이터로 폴백
+              const counts = (studentProgress[tSchool] && studentProgress[tSchool][qNum]) 
+                             || (studentProgress[''] && studentProgress[''][qNum]);
+                             
+              if (counts) {
+                written = includeSpaces ? counts.withSpace : counts.noSpace;
+              }
             }
             
             if (written > qLimit) written = qLimit;
@@ -3999,9 +4008,23 @@ window.openPsViewerModal = async function(studentLink) {
       const questions = (matchedSchool && matchedSchool.questions) ? matchedSchool.questions : [];
 
       let html = '';
-      hData.current.forEach(c => {
-        const qData = questions.find(q => q.label.trim() === String(c.qNum).trim());
-        const qPrompt = qData ? qData.content : '문항 정보를 불러올 수 없습니다.';
+      const tSchool = (student.targetSchool || '').trim();
+
+      questions.forEach(qData => {
+        const qKey = qData.label.trim();
+        
+        // 1. 현재 타겟 학교 버전 찾기
+        let matchedC = hData.current.find(c => String(c.qNum).trim() === qKey && (c.version_label || '').trim() === tSchool);
+        
+        // 2. 없으면 빈 꼬리표 버전(과거 마이그레이션 예외 데이터 폴백) 찾기
+        if (!matchedC) {
+            matchedC = hData.current.find(c => String(c.qNum).trim() === qKey && (c.version_label || '').trim() === '');
+        }
+        
+        if (!matchedC) return; // 해당 문항에 저장된 데이터가 없으면 패스
+        
+        const c = matchedC;
+        const qPrompt = qData.content || '문항 정보를 불러올 수 없습니다.';
         const qTitle = `[${c.qNum}]`;
 
         let renderedText = '<span class="text-muted">내용 없음</span>';
