@@ -1469,9 +1469,9 @@ function bindPersonalStatementToSelector(compositeQNum) {
   const countWrap = document.getElementById('ps-main-char-counter-wrap');
   
   const schoolMap = window.SCHOOL_QUESTIONS_MAP || [];
-  const matchedSchool = schoolMap.find(s => s.name === uiTargetSchool);
+  const matchedSchool = schoolMap.find(s => s.name === targetSchoolKey);
   const qData = matchedSchool && matchedSchool.questions ? matchedSchool.questions.find(q => {
-    return q.label.trim() === String(qNum).trim();
+    return q.label.trim() === String(targetQNumKey).trim();
   }) : null;
   const details = qData && qData.details ? qData.details : [];
 
@@ -1590,8 +1590,8 @@ function bindPersonalStatementToSelector(compositeQNum) {
   const checklistContainer = document.getElementById('ai-checklist-container');
   if (checklistContainer) {
     const aiLogs = hData.aiHistory || [];
-    const newType = '문항[' + qNum + ']_체크리스트';
-    const fallbackQNum = qNum.includes('|') ? qNum.split('|')[1] : qNum;
+    const newType = '문항[' + compositeQNum + ']_체크리스트';
+    const fallbackQNum = compositeQNum.includes('|') ? compositeQNum.split('|')[1] : compositeQNum;
     const legacyType = '문항' + fallbackQNum + '_체크리스트';
     let matchingLogs = aiLogs.filter(log => log.type === newType);
     if (matchingLogs.length === 0) {
@@ -1620,8 +1620,8 @@ function bindPersonalStatementToSelector(compositeQNum) {
   const aiDateEl = document.getElementById('ai-feedback-date-text');
   if (aiContainer) {
     const aiLog = hData.aiHistory || [];
-    const newType = '문항[' + qNum + ']_도움받기';
-    const fallbackQNum = qNum.includes('|') ? qNum.split('|')[1] : qNum;
+    const newType = '문항[' + compositeQNum + ']_도움받기';
+    const fallbackQNum = compositeQNum.includes('|') ? compositeQNum.split('|')[1] : compositeQNum;
     const legacyType = '문항' + fallbackQNum + '_도움받기';
     let targetAILogs = aiLog.filter(log => log.type === newType);
     if (targetAILogs.length === 0) {
@@ -1652,7 +1652,7 @@ function bindPersonalStatementToSelector(compositeQNum) {
     
     let lastText = '';
     historyList.forEach((h, index) => {
-      const textObj = h.texts.find(t => t.qNum == qNum);
+      const textObj = h.texts.find(t => String(t.qNum) === String(targetQNumKey) && (t.version_label === targetSchoolKey || (!t.version_label && targetSchoolKey === uiTargetSchool)));
       if (textObj && textObj.text && textObj.text !== lastText) {
         const opt = document.createElement('option');
         opt.value = textObj.text;
