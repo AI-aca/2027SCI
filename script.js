@@ -1329,12 +1329,7 @@ function switchTab(tabId) {
     if (resetFbBtn) resetFbBtn.style.display = (CURRENT_ROLE === '관리자') ? 'inline-block' : 'none';
     const qNum = document.getElementById('ps-question-selector').value;
     const newType = '문항[' + qNum + ']_도움받기';
-    const fallbackQNum = qNum.includes('|') ? qNum.split('|')[1] : qNum;
-    const legacyType = '문항' + fallbackQNum + '_도움받기';
     let targetAILogs = aiLog.filter(log => log.type === newType);
-    if (targetAILogs.length === 0) {
-      targetAILogs = aiLog.filter(log => log.type === legacyType);
-    }
     const dateEl = document.getElementById('ai-feedback-date-text');
     if (targetAILogs.length > 0) {
       const lastLog = targetAILogs[targetAILogs.length - 1];
@@ -1413,12 +1408,18 @@ function renderChecklistToHTML(jsonString) {
           case '구체적 상황': displayCategory = '구체적<br>상황'; break;
           case '본인의 직접 행동': displayCategory = '본인의<br>직접 행동'; break;
           case '행동 및 태도 변화': displayCategory = '행동 및<br>태도 변화'; break;
-          case '관점의 비교·대조': displayCategory = '관점의<br>비교·대조'; break;
-          case '진로/학업 영향': displayCategory = '진로/학업<br>영향'; break;
+          case '관점의 비교·대조':
+          case '관점의 비교 대조': displayCategory = '관점의<br>비교 대조'; break;
+          case '진로/학업 영향':
+          case '진로 및 학업 영향':
+          case '진로 및 학업 역량': displayCategory = '진로 및<br>학업 역량'; break;
           case '해결 방안 구체성': displayCategory = '해결 방안<br>구체성'; break;
           default:
             if (displayCategory.includes('시행착오 및 막힌 지점')) displayCategory = '시행착오<br>및<br>막힌 지점';
             else if (displayCategory.includes('구체적 수치')) displayCategory = '구체적 수치<br>및<br>데이터 활용';
+            else if (displayCategory.includes('관점의 비교')) displayCategory = '관점의<br>비교 대조';
+            else if (displayCategory.includes('진로 및 학업') || displayCategory.includes('진로/학업')) displayCategory = '진로 및<br>학업 역량';
+            else if (displayCategory.includes('해결 방안')) displayCategory = '해결 방안<br>구체성';
         }
 
         return `
