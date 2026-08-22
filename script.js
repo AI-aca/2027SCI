@@ -2491,6 +2491,9 @@ function bindEventHandlers() {
     let validSaveCount = 0;
     const qSelector = document.getElementById('ps-question-selector');
     
+    // 저장 보고서를 정렬하기 위한 임시 배열
+    const reportItems = [];
+    
     // 모든 문항을 순회하며 원본과 달라진 부분만 추출 (일괄 저장)
     hData.current.forEach(curr => {
       const orig = origData.find(o => o.qNum === curr.qNum && o.version_label === curr.version_label);
@@ -2498,36 +2501,81 @@ function bindEventHandlers() {
       const oldFb = orig ? orig.feedback : '';
       
       let displayName = curr.qNum;
+      let isVisibleInDropdown = false;
+      
       if (qSelector) {
         const compositeKey = curr.version_label ? (curr.version_label + '|' + curr.qNum) : (uiTargetSchool + '|' + curr.qNum);
         const matchedOpt = Array.from(qSelector.options).find(o => o.value === compositeKey);
-        if (matchedOpt) displayName = matchedOpt.textContent.trim();
+        if (matchedOpt) {
+          displayName = matchedOpt.textContent.trim();
+          isVisibleInDropdown = true;
+        }
       }
       
+      const isChanged = (CURRENT_ROLE === '학생') ? (curr.text !== oldPs) : (curr.feedback !== oldFb);
+      const isEmpty = (CURRENT_ROLE === '학생') ? (curr.text.trim() === '') : (curr.feedback.trim() === '');
+      
+      // 스텔스 차단 방어벽: 드롭다운 화면에 없는 유령 데이터이면서, 내용 변경조차 없다면 팝업창에서 완벽히 숨김
+      if (!isVisibleInDropdown && !isChanged) return;
+      
+      let lineStr = "";
+      
       if (CURRENT_ROLE === '학생') {
-        const isChanged = (curr.text !== oldPs);
-        const isEmpty = (curr.text.trim() === '');
-        
         if (isChanged && !isEmpty) {
-          reportMsg += `✅ ${displayName} : 내용 수정됨 (저장 대기)\n`;
+          lineStr = `✅ ${displayName} : 내용 수정됨 (저장 대기)\n`;
           contents.push({ qNum: curr.qNum, text: curr.text, type: '자소서', version_label: curr.version_label });
           validSaveCount++;
         } else if (!isChanged && !isEmpty) {
-          reportMsg += `➖ ${displayName} : 변경 없음 (기존 유지)\n`;
+          lineStr = `➖ ${displayName} : 변경 없음 (기존 유지)\n`;
         } else if (!isChanged && isEmpty) {
-          reportMsg += `❌ ${displayName} : 빈 칸 (저장 불가)\n`;
+          lineStr = `❌ ${displayName} : 빈 칸 (저장 불가)\n`;
         } else if (isChanged && isEmpty) {
-          reportMsg += `❌ ${displayName} : 내용이 빈 칸으로 수정됨 (저장 불가)\n`;
+          lineStr = `❌ ${displayName} : 내용이 빈 칸으로 수정됨 (저장 불가)\n`;
         }
       } else {
         if (curr.feedback !== oldFb) {
-          reportMsg += `✅ ${displayName} : 피드백 내용 수정됨 (저장 대기)\n`;
+          lineStr = `✅ ${displayName} : 피드백 내용 수정됨 (저장 대기)\n`;
           contents.push({ qNum: curr.qNum, text: curr.feedback, type: '피드백', version_label: curr.version_label });
           validSaveCount++;
         } else {
-          reportMsg += `➖ ${displayName} : 피드백 변경 없음 (기존 유지)\n`;
+          lineStr = `➖ ${displayName} : 피드백 변경 없음 (기존 유지)\n`;
         }
       }
+      
+      if (lineStr) {
+        reportItems.push({ curr, lineStr, displayName });
+      }
+    });
+
+    // 팝업창 출력 내용 정렬 (드롭다운과 완벽히 동일한 논리적 정렬)
+    reportItems.sort((a, b) => {
+      const aIsOld = a.displayName.includes('(구)');
+      const bIsOld = b.displayName.includes('(구)');
+      
+      // 1. (구) 항목은 무조건 뒤로
+      if (aIsOld !== bIsOld) return aIsOld ? 1 : -1;
+      
+      // 2. 버전 라벨(학교명)별로 그룹핑
+      const labelA = (a.curr.version_label || '').trim();
+      const labelB = (b.curr.version_label || '').trim();
+      if (labelA !== labelB) return labelA.localeCompare(labelB);
+      
+      // 3. 문항 번호 숫자 단위 정렬 (예: 1-2, 2-1 순서 보장)
+      const parseNum = (str) => {
+        const m = String(str).match(/(\d+)(?:-(\d+))?/);
+        if (!m) return [999, 999];
+        return [parseInt(m[1]), parseInt(m[2] || 0)];
+      };
+      const numA = parseNum(a.curr.qNum);
+      const numB = parseNum(b.curr.qNum);
+      
+      if (numA[0] !== numB[0]) return numA[0] - numB[0];
+      return numA[1] - numB[1];
+    });
+
+    // 정렬된 결과를 최종 문자열에 합치기
+    reportItems.forEach(item => {
+      reportMsg += item.lineStr;
     });
     
     let totalTextLength = 0;
