@@ -1799,54 +1799,47 @@ async function openInterviewPractice(studentLink, mode) {
   // 질문 텍스트를 세트 단위(### 기준)로 파싱하는 함수
   function parseQuestionSets(rawText) {
     if (!rawText) return [];
-    const sets = [];
-    const parts = rawText.split(/(?=^###\s)/m);
-    for (const part of parts) {
-      const trimmed = part.trim();
-      if (!trimmed || !trimmed.startsWith('###')) continue;
-      const firstNewline = trimmed.indexOf('\n');
-      let rawTitle = firstNewline > 0 ? trimmed.substring(0, firstNewline).replace(/^###\s*/, '').trim() : trimmed.replace(/^###\s*/, '').trim();
-      let titleHtml = rawTitle;
-
-      const qMatch = rawTitle.match(/(Q\d+)/i);
-      let qNum = qMatch ? qMatch[1].toUpperCase() : "Q?";
-      
-      const catMatch = rawTitle.match(/\[(.*?)\]/);
-      let category = catMatch ? catMatch[1].trim() : "분류없음";
-      
-      let subTitle = "";
-      if (catMatch) {
-        const idx = rawTitle.indexOf(']');
-        subTitle = rawTitle.substring(idx + 1).trim();
-        subTitle = subTitle.replace(/^\(/, '').replace(/\)$/, '').trim();
-      } else {
-        subTitle = rawTitle.replace(/(Q\d+)\.?/, '').replace(/📝/, '').trim(); 
-      }
-      
-      if (!subTitle) subTitle = "제목 없음";
-
-      rawTitle = `📝 ${qNum}. [${category}] ${subTitle}`;
-      titleHtml = `📝 ${qNum}. <span style="color: var(--color-primary);">[${category}]</span> ${subTitle}`;
-
-      let body = firstNewline > 0 ? trimmed.substring(firstNewline + 1).trim() : '';
-      // 섹션 구분선(---) 및 상위 제목(# 또는 ##)을 body에서 제거
-      body = body.split('\n').filter(line => {
-        const t = line.trim();
-        if (t === '---' || t === '') return false;
-        if (/^#{1,2}\s/.test(t)) return false;
-        return true;
-      }).join('\n');
-      
-      // AI가 생성하는 글머리기호나 이모지(ㅇ, -, *, 🎯, 🔗 등) 및 뒤에 붙는 찌꺼기(**, : 등)를 정규식으로 완벽히 캡처하여 고정 포맷으로 강제 통일
-      body = body.replace(/^[^a-zA-Z0-9가-힣]*면접\s*질문[^a-zA-Z0-9가-힣]*/gmi, '🗣️ 면접 질문: ');
-      body = body.replace(/^[^a-zA-Z0-9가-힣]*출제\s*의도[^a-zA-Z0-9가-힣]*/gmi, '🎯 출제 의도: ');
-      body = body.replace(/^[^a-zA-Z0-9가-힣]*꼬리\s*질문[^a-zA-Z0-9가-힣]*/gmi, '🔗 꼬리 질문:\n');
-      
-      body = body.trim();
-      
-      if (!body) { sets.push({ title: rawTitle, titleHtml, body: '', raw: trimmed }); continue; }
-      sets.push({ title: rawTitle, titleHtml, body, raw: trimmed });
+    
+    let jsonArray = [];
+    try {
+      // AI가 마크다운 코드블록(```json)을 씌워 보낼 경우를 대비한 껍데기 제거 (파싱 에러 0% 방어막)
+      const cleanStr = rawText.replace(/^```(json)?\n?/i, '').replace(/```$/i, '').trim();
+      jsonArray = JSON.parse(cleanStr);
+    } catch (e) {
+      console.error("JSON 파싱 에러:", e, rawText);
+      return []; // 에러 시 빈 배열 반환하여 UI 크래시 완벽 차단
     }
+
+    const sets = [];
+    jsonArray.forEach(q => {
+      // AI 누락 대비 안전장치 (undefined 노출 방지)
+      const mCat = q.mainCategory || '대분류 없음';
+      const sCat = q.subCategory || '중분류 없음';
+      const sTitle = q.subTitle || '소제목 없음';
+      
+      // 기존 UI 구조와 100% 동일하게 렌더링되도록 시각적 태그 조립
+      const titleHtml = `📝 Q${q.qNum || '?'}. <span style="color: var(--color-primary);">[${mCat} - ${sCat}]</span> ${sTitle}`;
+      const titleText = `📝 Q${q.qNum || '?'}. [${mCat} - ${sCat}] ${sTitle}`;
+
+      // 아코디언 내부 본문 조립 (기존 정규식이 잡아내던 마크다운 아이콘 완벽 재현)
+      let bodyText = `🗣️ 면접 질문: ${q.mainQuestion || '내용 없음'}\n\n🎯 출제 의도: ${q.intention || '내용 없음'}`;
+      
+      // 꼬리 질문이 존재할 경우 하단에 조립
+      if (q.tailQuestions && q.tailQuestions.length > 0) {
+        bodyText += `\n\n🔗 꼬리 질문:\n`;
+        q.tailQuestions.forEach(tail => {
+          bodyText += `- ${tail}\n`;
+        });
+      }
+
+      sets.push({
+        title: titleText,
+        titleHtml: titleHtml,
+        body: bodyText.trim(),
+        raw: JSON.stringify(q)
+      });
+    });
+
     return sets;
   }
   
