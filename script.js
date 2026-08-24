@@ -1794,6 +1794,8 @@ async function openInterviewPractice(studentLink, mode) {
   document.getElementById('interview-answer-textarea').readOnly = true;
   document.getElementById('interview-answer-textarea').placeholder = '좌측 목록에서 답변할 질문을 먼저 선택해 주세요.';
   document.getElementById('btn-save-interview-answer').style.display = 'none';
+  const indicator = document.getElementById('changed-questions-indicator');
+  if (indicator) indicator.innerHTML = '';
   
   // 질문 텍스트를 세트 단위(### 기준)로 파싱하는 함수
   function parseQuestionSets(rawText) {
@@ -1875,17 +1877,46 @@ async function openInterviewPractice(studentLink, mode) {
     }
 
     let answersObj = {};
+    let originalAnswersObj = {};
     try {
       answersObj = JSON.parse(student.studentAnswers || '{}');
+      originalAnswersObj = JSON.parse(student.studentAnswers || '{}');
     } catch (e) {}
     
     let currentSelectedTitle = null;
     const textInput = document.getElementById('interview-answer-textarea');
     
+    // 사용자가 입력할 때마다 실시간 UI 갱신 함수
+    function updateChangedIndicator() {
+      const indicator = document.getElementById('changed-questions-indicator');
+      if (!indicator) return;
+      const changed = [];
+      const unchanged = [];
+      questionSets.forEach(q => {
+        const orig = (originalAnswersObj[q.title] || '').trim();
+        const curr = (answersObj[q.title] || '').trim();
+        const shortTitle = q.title.split('.')[0];
+        if (curr !== '' && curr !== orig) {
+          changed.push(shortTitle);
+        } else {
+          unchanged.push(shortTitle);
+        }
+      });
+      
+      const changedStr = changed.length > 0 ? changed.join(' / ') : '없음';
+      const unchangedStr = unchanged.length > 0 ? unchanged.join(' / ') : '없음';
+      
+      indicator.innerHTML = `
+        <div style="font-size: 14px; line-height: 1.5; color: #ffeb3b; font-weight: bold;">답변이 변경된 질문(저장 반영) : ${changedStr}</div>
+        <div style="font-size: 14px; line-height: 1.5; color: #ffffff; font-weight: normal;">미작성 및 변경이 없는 질문(저장 미반영) : ${unchangedStr}</div>
+      `;
+    }
+
     // 사용자가 입력할 때마다 메모리에 즉시 임시 저장 (탭 전환 시 날아감 방지)
     textInput.oninput = () => {
       if (currentSelectedTitle && CURRENT_ROLE === '학생') {
         answersObj[currentSelectedTitle] = textInput.value;
+        updateChangedIndicator();
       }
     };
 
@@ -1920,6 +1951,27 @@ async function openInterviewPractice(studentLink, mode) {
         newSaveBtn.onclick = async () => {
           // 버튼 클릭 시 현재 텍스트박스 내용을 한번 더 확실히 메모리에 동기화
           answersObj[currentSelectedTitle] = textInput.value;
+          updateChangedIndicator(); // 마지막 값 동기화
+          
+          const changed = [];
+          const unchanged = [];
+          
+          questionSets.forEach(q => {
+            const orig = (originalAnswersObj[q.title] || '').trim();
+            const curr = (answersObj[q.title] || '').trim();
+            const shortTitle = q.title.split('.')[0];
+            if (curr !== '' && curr !== orig) {
+              changed.push(shortTitle);
+            } else {
+              unchanged.push(shortTitle);
+            }
+          });
+          
+          const changedStr = changed.length > 0 ? changed.join(' / ') : '없음';
+          const unchangedStr = unchanged.length > 0 ? unchanged.join(' / ') : '없음';
+          
+          const msg = `[저장 확인]\n- 답변이 변경된 질문(저장 반영) : ${changedStr}\n- 미작성 및 변경이 없는 질문(저장 미반영) : ${unchangedStr}\n\n위 변경사항을 서버에 일괄 저장하시겠습니까?`;
+          if (!confirm(msg)) return;
           
           try {
             await ApiClient.post('saveStudentAnswers', {
@@ -2883,10 +2935,10 @@ function bindEventHandlers() {
     }
     // 💡 작성 안 된 문항 검증 로직 끝
 
-    const msg1 = "🚨 [1차 경고] 자소서의 '모든 문항'이 한 번에 최종본으로 제출됩니다. 제출 완료 후에는 어떤 항목도 더 이상 수정할 수 없으며, 영구적으로 잠깁니다. 진행하시겠습니까?";
+    const msg1 = "🚨 [1차 경고] 자소서의 ⚠️'모든 문항'⚠️이 한 번에 최종본으로 제출됩니다. 제출 완료 후에는 어떤 문항도 더 이상 수정할 수 없으며, 영구적으로 잠깁니다. 진행하시겠습니까?";
     if (!confirm(msg1)) return;
     
-    const msg2 = "🚨 [최종 경고] 정말로 자소서의 '모든 항목'을 작성 및 수정이 불가능한 '최종본'으로 일괄 제출하는 것이 확실합니까?";
+    const msg2 = "🚨 [최종 경고] 정말로 자소서의 ⚠️'모든 문항'⚠️을 작성 및 수정이 불가능한 '최종본'으로 일괄 제출하는 것이 확실합니까?";
     if (!confirm(msg2)) return;
     
     try {

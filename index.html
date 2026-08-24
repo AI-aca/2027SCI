@@ -522,7 +522,7 @@
         <!-- 락 잠금/해제 및 저장 버튼이 동적으로 렌더링됨 -->
         <button class="btn-action btn-secondary" id="btn-close-ps-editor-modal">닫기</button>
         <button class="btn-action" id="btn-save-ps">저장하기</button>
-        <button class="btn-action" id="btn-submit-ps-final" style="background-color: var(--color-danger);">🚀 모든 항목을 최종본으로 제출하기</button>
+        <button class="btn-action" id="btn-submit-ps-final" style="background-color: var(--color-danger);">🚀 모든 문항을 최종본으로 제출하기</button>
       </div>
     </div>
   </div>
@@ -549,7 +549,10 @@
   <div class="modal-overlay" id="modal-interview-practice">
     <div class="modal-container">
       <div class="modal-header">
-        <h3 id="interview-modal-title">면접 예상 질문 연습 및 답변 기록</h3>
+        <div style="display: flex; flex-direction: column;">
+          <h3 id="interview-modal-title">면접 예상 질문 연습 및 답변 기록</h3>
+          <div id="changed-questions-indicator" style="margin-top: 8px;"></div>
+        </div>
         <button class="btn-close" id="btn-close-interview-modal">&times;</button>
       </div>
       <div class="modal-body" style="overflow-y: hidden; padding: 24px; display: flex; flex-direction: column;">
