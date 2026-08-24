@@ -1896,10 +1896,10 @@ async function openInterviewPractice(studentLink, mode) {
         const orig = (originalAnswersObj[q.title] || '').trim();
         const curr = (answersObj[q.title] || '').trim();
         const shortTitle = q.title.split('.')[0];
-        if (curr !== '' && curr !== orig) {
-          changed.push(shortTitle);
+        if (curr !== orig) {
+          changed.push('📝 ' + shortTitle);
         } else {
-          unchanged.push(shortTitle);
+          unchanged.push('📝 ' + shortTitle);
         }
       });
       
@@ -1907,8 +1907,12 @@ async function openInterviewPractice(studentLink, mode) {
       const unchangedStr = unchanged.length > 0 ? unchanged.join(' / ') : '없음';
       
       indicator.innerHTML = `
-        <div style="font-size: 14px; line-height: 1.5; color: #ffeb3b; font-weight: bold;">답변이 변경된 질문(저장 반영) : ${changedStr}</div>
-        <div style="font-size: 14px; line-height: 1.5; color: #ffffff; font-weight: normal;">미작성 및 변경이 없는 질문(저장 미반영) : ${unchangedStr}</div>
+        <div style="font-size: 14px; line-height: 1.5; font-weight: bold;">
+          <span style="color: var(--color-primary);">💾 답변이 변경된 질문(저장 반영) : </span><span style="color: #ffeb3b;">${changedStr}</span>
+        </div>
+        <div style="font-size: 14px; line-height: 1.5; color: #ffffff; font-weight: normal;">
+          🔒 답변의 변경이 없는 질문(저장 미반영) : ${unchangedStr}
+        </div>
       `;
     }
 
@@ -1960,17 +1964,22 @@ async function openInterviewPractice(studentLink, mode) {
             const orig = (originalAnswersObj[q.title] || '').trim();
             const curr = (answersObj[q.title] || '').trim();
             const shortTitle = q.title.split('.')[0];
-            if (curr !== '' && curr !== orig) {
-              changed.push(shortTitle);
+            if (curr !== orig) {
+              changed.push('📝 ' + shortTitle);
             } else {
-              unchanged.push(shortTitle);
+              unchanged.push('📝 ' + shortTitle);
             }
           });
           
           const changedStr = changed.length > 0 ? changed.join(' / ') : '없음';
           const unchangedStr = unchanged.length > 0 ? unchanged.join(' / ') : '없음';
           
-          const msg = `[저장 확인]\n- 답변이 변경된 질문(저장 반영) : ${changedStr}\n- 미작성 및 변경이 없는 질문(저장 미반영) : ${unchangedStr}\n\n위 변경사항을 서버에 일괄 저장하시겠습니까?`;
+          if (changed.length === 0) {
+            alert('답변 변경 사항이 없어 서버에 저장할 내용이 없습니다.');
+            return;
+          }
+          
+          const msg = `[저장 확인]\n- 💾 답변이 변경된 질문(저장 반영) : ${changedStr}\n- 🔒 답변의 변경이 없는 질문(저장 미반영) : ${unchangedStr}\n\n위 변경사항을 서버에 일괄 저장하시겠습니까?`;
           if (!confirm(msg)) return;
           
           try {
@@ -1980,6 +1989,8 @@ async function openInterviewPractice(studentLink, mode) {
             });
             alert('작성하신 모든 답변 내용이 스프레드시트에 성공적으로 일괄 저장되었습니다.');
             student.studentAnswers = JSON.stringify(answersObj);
+            originalAnswersObj = JSON.parse(JSON.stringify(answersObj));
+            updateChangedIndicator();
           } catch (e) {
             alert('답변 저장 실패: ' + e.toString());
           }
@@ -1987,6 +1998,9 @@ async function openInterviewPractice(studentLink, mode) {
       };
       qList.appendChild(btn);
     });
+    
+    // 모달 렌더링 완료 시 최초 1회 상태 표시줄 강제 업데이트 (레이아웃 Shift 방지)
+    updateChangedIndicator();
   }
   
   document.getElementById('modal-interview-practice').classList.add('open');
