@@ -994,7 +994,7 @@ function openEditStudent(studentLink) {
               if (res && (res.success || res === true)) { // 백엔드 로직에 따라 res.success가 없을수도있음
                 alert('처리되었습니다.');
                 student.is_hidden = newHidden;
-                document.getElementById('modal-register').style.display = 'none';
+                document.getElementById('modal-register').classList.remove('open');
                 loadStudentsData(); // 데이터 재로드 및 렌더링
               } else {
                 alert('처리 실패: ' + (res.error || '알 수 없는 오류'));
@@ -1032,9 +1032,8 @@ function openEditStudent(studentLink) {
   document.getElementById('reg-target-school').value = student.targetSchool || '인천';
   document.getElementById('reg-parent-phone').value = student.parentPhone || '';
   document.getElementById('reg-student-phone').value = student.studentPhone || '';
-  // 수정 시 폰번호 변경 불가 (기본 키 역할을 하므로)
-  document.getElementById('reg-student-phone').setAttribute('readonly', 'true');
-  document.getElementById('reg-student-phone').style.backgroundColor = 'var(--bg-card)';
+  document.getElementById('reg-student-phone').removeAttribute('readonly');
+  document.getElementById('reg-student-phone').style.backgroundColor = '';
   
   document.getElementById('reg-math-teacher').value = student.mathTeacher || '';
   document.getElementById('reg-sci-teacher').value = student.sciTeacher || '';
