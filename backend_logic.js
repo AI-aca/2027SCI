@@ -16,7 +16,7 @@ async function callGeminiAPI(apiKey, systemPrompt, userPrompt, forceModels = nul
   }
   if (!key) throw new Error('Gemini API 키가 설정되지 않았습니다.');
   
-  const models = forceModels ? forceModels : ['gemini-3.1-pro-preview', 'gemini-3.6-flash'];
+  const models = forceModels ? forceModels : ['gemini-3.1-pro-preview', 'gemini-3.7-flash'];
   let lastError = null;
 
   for (let i = 0; i < models.length; i++) {
@@ -135,7 +135,7 @@ async function generateAIChecklist(studentLink, qNum, statementText) {
       userPrompt += `[지시사항]:\n관리자의 요구조건 텍스트 자체를 학생이 쓴 글로 오해하지 말고, 학생의 실제 작성 내용만을 대상으로 요구조건이 잘 충족되었는지 평가하라.\n`;
     }
     
-    const feedbackText = await callGeminiWithFallback(systemPrompt, userPrompt, ['gemini-3.6-flash', 'gemini-3.5-flash']);
+    const feedbackText = await callGeminiWithFallback(systemPrompt, userPrompt, ['gemini-3.7-flash', 'gemini-3.6-flash']);
     
     const targetType = '문항[' + qNum + ']_체크리스트';
     const fbPayload = {
@@ -211,7 +211,7 @@ async function generateAIFeedback(studentId, qNum, statementText) {
     if (qContent) userPrompt += `질문: ${qContent}\n\n`;
     userPrompt += `[학생 작성 내용]:\n${formattedStatement}`;
     
-    const feedbackText = await callGeminiWithFallback(systemPrompt, userPrompt, ['gemini-3.6-flash', 'gemini-3.5-flash']);
+    const feedbackText = await callGeminiWithFallback(systemPrompt, userPrompt, ['gemini-3.7-flash', 'gemini-3.6-flash']);
     
     let safeFeedback = feedbackText;
     if (/^[=+\-@]/.test(safeFeedback) || safeFeedback.startsWith('===')) {
@@ -745,7 +745,7 @@ async function extractTextFromPdf(fileUrl) {
     const { data: pdfPromptData } = await window.supabaseClient.from('settings').select('setting_value').eq('setting_key', 'prompt_pdf').single();
     const prompt = pdfPromptData ? pdfPromptData.setting_value : "생활기록부 PDF 문서를 분석하여 텍스트로 추출하라.";
     
-    const models = ['gemini-3.6-flash', 'gemini-3.5-flash'];
+    const models = ['gemini-3.7-flash', 'gemini-3.6-flash'];
     let lastError = null;
     
     for (let i = 0; i < models.length; i++) {
