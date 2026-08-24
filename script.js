@@ -1944,10 +1944,10 @@ async function openInterviewPractice(studentLink, mode) {
       btn.style.textAlign = 'left';
       btn.style.justifyContent = 'flex-start';
       btn.style.whiteSpace = 'normal';
-      btn.textContent = set.title;
+      btn.innerHTML = set.titleHtml || set.title;
       btn.onclick = () => {
         currentSelectedTitle = set.title;
-        document.getElementById('selected-question-label').textContent = set.title;
+        document.getElementById('selected-question-label').innerHTML = set.titleHtml || set.title;
         document.getElementById('modal-question-text').innerHTML = parseMarkdownToHtml(set.body);
         
         textInput.value = answersObj[set.title] || '';
