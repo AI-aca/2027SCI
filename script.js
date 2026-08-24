@@ -1806,7 +1806,29 @@ async function openInterviewPractice(studentLink, mode) {
       const trimmed = part.trim();
       if (!trimmed || !trimmed.startsWith('###')) continue;
       const firstNewline = trimmed.indexOf('\n');
-      const title = firstNewline > 0 ? trimmed.substring(0, firstNewline).replace(/^###\s*/, '').trim() : trimmed.replace(/^###\s*/, '').trim();
+      let rawTitle = firstNewline > 0 ? trimmed.substring(0, firstNewline).replace(/^###\s*/, '').trim() : trimmed.replace(/^###\s*/, '').trim();
+      let titleHtml = rawTitle;
+
+      const qMatch = rawTitle.match(/(Q\d+)/i);
+      let qNum = qMatch ? qMatch[1].toUpperCase() : "Q?";
+      
+      const catMatch = rawTitle.match(/\[(.*?)\]/);
+      let category = catMatch ? catMatch[1].trim() : "분류없음";
+      
+      let subTitle = "";
+      if (catMatch) {
+        const idx = rawTitle.indexOf(']');
+        subTitle = rawTitle.substring(idx + 1).trim();
+        subTitle = subTitle.replace(/^\(/, '').replace(/\)$/, '').trim();
+      } else {
+        subTitle = rawTitle.replace(/(Q\d+)\.?/, '').replace(/📝/, '').trim(); 
+      }
+      
+      if (!subTitle) subTitle = "제목 없음";
+
+      rawTitle = `📝 ${qNum}. [${category}] ${subTitle}`;
+      titleHtml = `📝 ${qNum}. <span style="color: var(--color-primary);">[${category}]</span> ${subTitle}`;
+
       let body = firstNewline > 0 ? trimmed.substring(firstNewline + 1).trim() : '';
       // 섹션 구분선(---) 및 상위 제목(# 또는 ##)을 body에서 제거
       body = body.split('\n').filter(line => {
@@ -1823,8 +1845,8 @@ async function openInterviewPractice(studentLink, mode) {
       
       body = body.trim();
       
-      if (!body) { sets.push({ title, body: '', raw: trimmed }); continue; }
-      sets.push({ title, body, raw: trimmed });
+      if (!body) { sets.push({ title: rawTitle, titleHtml, body: '', raw: trimmed }); continue; }
+      sets.push({ title: rawTitle, titleHtml, body, raw: trimmed });
     }
     return sets;
   }
