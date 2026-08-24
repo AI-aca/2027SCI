@@ -1897,9 +1897,9 @@ async function openInterviewPractice(studentLink, mode) {
         const curr = (answersObj[q.title] || '').trim();
         const shortTitle = q.title.split('.')[0];
         if (curr !== orig) {
-          changed.push('📝 ' + shortTitle);
+          changed.push(shortTitle);
         } else {
-          unchanged.push('📝 ' + shortTitle);
+          unchanged.push(shortTitle);
         }
       });
       
@@ -1965,9 +1965,9 @@ async function openInterviewPractice(studentLink, mode) {
             const curr = (answersObj[q.title] || '').trim();
             const shortTitle = q.title.split('.')[0];
             if (curr !== orig) {
-              changed.push('📝 ' + shortTitle);
+              changed.push(shortTitle);
             } else {
-              unchanged.push('📝 ' + shortTitle);
+              unchanged.push(shortTitle);
             }
           });
           
