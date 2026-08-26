@@ -1075,6 +1075,11 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual', ta
   
   // 락 잠금 여부에 따른 경고 및 버튼 비활성화
   const isLocked = student.psStatus === '최종제출';
+  
+  const badgeFinalSubmit = document.getElementById('ps-final-submit-badge');
+  if (badgeFinalSubmit) {
+    badgeFinalSubmit.style.display = isLocked ? 'inline-flex' : 'none';
+  }
 
   const memoPad = document.getElementById('student-memo-pad');
   const btnSaveMemo = document.getElementById('btn-save-memo');
