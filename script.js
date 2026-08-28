@@ -4298,10 +4298,10 @@ window.openPsViewerModal = async function(studentLink) {
           }
         }
 
-        html += `<div style="margin-top: 20px;">`;
-        html += `  <h4 style="color: #a5b4fc; margin-bottom: 8px;">${qTitle}</h4>`;
-        html += `  <div style="font-size: 13px; color: #94a3b8; margin-bottom: 12px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; border-left: 3px solid #a5b4fc; line-height: 1.4;">${qPrompt}</div>`;
-        html += `  <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 6px; white-space: pre-wrap; font-size: 14px; line-height: 1.6;">${renderedText}</div>`;
+        html += `<div style="margin-top: 20px;" class="ps-print-block">`;
+        html += `  <h4 class="ps-print-title" style="color: #a5b4fc; margin-bottom: 8px;">${qTitle}</h4>`;
+        html += `  <div class="ps-print-prompt" style="font-size: 13px; color: #94a3b8; margin-bottom: 12px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; border-left: 3px solid #a5b4fc; line-height: 1.4;">${qPrompt}</div>`;
+        html += `  <div class="ps-print-answer" style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 6px; white-space: pre-wrap; font-size: 14px; line-height: 1.6;">${renderedText}</div>`;
         html += `</div>`;
       });
       viewerContent.innerHTML = html;
@@ -4316,48 +4316,37 @@ window.openPsViewerModal = async function(studentLink) {
         const sSchool = student.school ? student.school : '소속미상';
         const outName = `[자소서] ${sName}(${sSchool}).pdf`;
         
-        // 1. 인쇄용 복제본(Clone) 생성 (화면 UI 보존을 위함)
-        const clone = viewerContent.cloneNode(true);
+        // 1. 현재 HTML 상태(다크모드) 및 스타일을 문자열로 완벽히 백업
+        const backupHTML = viewerContent.innerHTML;
+        const backupColor = viewerContent.style.color;
+        const backupBg = viewerContent.style.backgroundColor;
         
-        // 2. 복제본 기본 스타일 세탁 (흰 배경, 폰트색)
-        clone.style.color = '#000000';
-        clone.style.padding = '20px'; // 여백 추가
-        clone.style.backgroundColor = '#ffffff';
+        // 2. 인쇄에 최적화된 상태로 원본 DOM 즉시 조작
+        viewerContent.style.color = '#000000';
+        viewerContent.style.backgroundColor = '#ffffff';
         
-        // 3. 문항 제목 및 질문 텍스트 스타일 덮어쓰기
-        const h4s = clone.querySelectorAll('h4');
+        const h4s = viewerContent.querySelectorAll('.ps-print-title');
         h4s.forEach(h => {
           h.style.color = '#000000';
           h.style.fontWeight = 'bold';
         });
 
-        const prompts = clone.querySelectorAll('div[style*="border-left"]');
+        const prompts = viewerContent.querySelectorAll('.ps-print-prompt');
         prompts.forEach(p => {
           p.style.color = '#333333';
           p.style.backgroundColor = 'transparent';
           p.style.borderLeftColor = '#555555';
         });
 
-        // 4. 답변 본문 회색 배경 제거 및 '글씨 반갈죽' 방지
-        const answers = clone.querySelectorAll('div[style*="rgba(0,0,0,0.2)"]');
+        const answers = viewerContent.querySelectorAll('.ps-print-answer');
         answers.forEach(a => {
           a.style.backgroundColor = 'transparent';
           a.style.color = '#000000';
-          a.style.whiteSpace = 'normal'; // pre-wrap 해제
+          a.style.whiteSpace = 'normal';
           
-          // 엔터 단위로 쪼개어 page-break-inside: avoid 적용
           const lines = a.innerText.split('\n');
           a.innerHTML = lines.map(line => `<div style="page-break-inside: avoid; min-height: 1.4em;">${line}</div>`).join('');
         });
-
-        // 5. html2pdf가 읽을 수 있도록 클론을 DOM에 잠시 숨겨서 추가
-        const wrapper = document.createElement('div');
-        wrapper.style.position = 'absolute';
-        wrapper.style.left = '-9999px';
-        wrapper.style.top = '0';
-        wrapper.style.width = '800px'; // A4 비율 렌더링용 고정 너비
-        wrapper.appendChild(clone);
-        document.body.appendChild(wrapper);
         
         try {
           if (typeof html2pdf !== 'undefined') {
@@ -4368,7 +4357,7 @@ window.openPsViewerModal = async function(studentLink) {
               html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
               jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
               pagebreak: { mode: ['css', 'legacy'] }
-            }).from(wrapper).save();
+            }).from(viewerContent).save();
           } else {
             alert('PDF 변환 라이브러리를 불러오지 못했습니다.');
           }
@@ -4376,10 +4365,10 @@ window.openPsViewerModal = async function(studentLink) {
           console.error('PDF 다운로드 에러:', err);
           alert('PDF 다운로드 중 오류가 발생했습니다.');
         } finally {
-          // 6. 작업 완료 후 임시 클론 노드 찌꺼기 완벽 청소
-          if (document.body.contains(wrapper)) {
-            document.body.removeChild(wrapper);
-          }
+          // 3. 작업 완료 직후 원래 HTML과 다크모드 스타일로 즉시 원상복구
+          viewerContent.innerHTML = backupHTML;
+          viewerContent.style.color = backupColor;
+          viewerContent.style.backgroundColor = backupBg;
         }
       };
     }
