@@ -273,8 +273,7 @@ async function generateAIQuestions(studentId, type) {
     "mainQuestion": "실제 면접관이 질문하듯 학생에게 던지는 메인 면접 질문 내용",
     "intention": "이 질문을 통해 확인하고자 하는 학생의 역량 및 평가 요소",
     "tailQuestions": [
-      "메인 질문에 이어질 수 있는 추가 압박 질문 1",
-      "메인 질문에 이어질 수 있는 추가 압박 질문 2"
+      "메인 질문에 이어질 수 있는 추가 압박 질문 1"
     ]
   }
 ]`;
