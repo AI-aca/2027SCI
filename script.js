@@ -4327,7 +4327,7 @@ window.openPsViewerModal = async function(studentLink) {
         
         const h4s = viewerContent.querySelectorAll('.ps-print-title');
         h4s.forEach(h => {
-          h.style.color = '#000000';
+          h.style.color = '#16a34a';
           h.style.fontWeight = 'bold';
         });
 
@@ -4342,6 +4342,7 @@ window.openPsViewerModal = async function(studentLink) {
         answers.forEach(a => {
           a.style.backgroundColor = 'transparent';
           a.style.color = '#000000';
+          a.style.border = '1px solid #999999';
           a.style.whiteSpace = 'normal';
           
           const lines = a.innerText.split('\n');
