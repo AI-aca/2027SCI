@@ -647,7 +647,10 @@
     <div class="modal-container" style="max-width: 1100px; width: 95%; height: 98vh !important; max-height: 98vh !important; display: flex; flex-direction: column;">
       <div class="modal-header">
         <h3 id="pdf-preview-modal-title">📄 생기부 PDF 문서 열람</h3>
-        <button class="btn-close" id="btn-close-pdf-preview-modal">&times;</button>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button class="btn-action" id="btn-download-pdf-preview" style="background-color: var(--color-primary); padding: 4px 12px; font-size: 14px;"><i class="fa-solid fa-download"></i> 다운로드</button>
+          <button class="btn-close" id="btn-close-pdf-preview-modal">&times;</button>
+        </div>
       </div>
       <div class="modal-body" style="padding: 0; flex: 1; overflow: hidden; background: #2a2a2a;">
         <div id="pdf-preview-container" style="width: 100%; height: 100%;"></div>

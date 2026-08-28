@@ -692,7 +692,7 @@ function renderMainTable() {
       // 특별 컬럼 가공
       if (col.key === 'recordView') {
         if (student.recordPdf) {
-          td.innerHTML = `<button class="btn-action" style="padding: 2px 6px; font-size: 14px; background-color: var(--color-secondary); display: inline-flex;" onclick="openPdfPreview('${student.recordPdf}', '${student.name || ''}'); return false;"><i class="fa-solid fa-file-pdf"></i> 보기</button>`;
+          td.innerHTML = `<button class="btn-action" style="padding: 2px 6px; font-size: 14px; background-color: var(--color-secondary); display: inline-flex;" onclick="openPdfPreview('${student.recordPdf}', '${(student.name || '').replace(/'/g, "\\'")}', '${(student.school || '').replace(/'/g, "\\'")}'); return false;"><i class="fa-solid fa-file-pdf"></i> 보기</button>`;
         } else {
           td.innerHTML = `<span class="text-muted">미업로드</span>`;
         }
@@ -4009,7 +4009,7 @@ async function runSingleAIEval(studentId) {
 
 
 
-window.openPdfPreview = async function(url, studentName) {
+window.openPdfPreview = async function(url, studentName, studentSchool) {
   if (!url || url === 'null') {
     alert('등록된 생기부 PDF 링크가 없습니다.');
     return;
@@ -4017,16 +4017,20 @@ window.openPdfPreview = async function(url, studentName) {
   
   // 만약 url이 http(s)://로 시작하지 않고 단순 파일명/UUID라면 Supabase Storage Public URL로 정제
   let fullUrl = url;
+  let isSupabaseFile = false;
+  let sFileName = '';
+  
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    let fileName = url;
-    if (!fileName.startsWith('record_') && !fileName.endsWith('.pdf')) {
-      fileName = `record_${fileName}.pdf`;
-    } else if (!fileName.endsWith('.pdf')) {
-      fileName = `${fileName}.pdf`;
+    isSupabaseFile = true;
+    sFileName = url;
+    if (!sFileName.startsWith('record_') && !sFileName.endsWith('.pdf')) {
+      sFileName = `record_${sFileName}.pdf`;
+    } else if (!sFileName.endsWith('.pdf')) {
+      sFileName = `${sFileName}.pdf`;
     }
     
     if (window.supabaseClient) {
-      const { data } = window.supabaseClient.storage.from('student_records').getPublicUrl(fileName);
+      const { data } = window.supabaseClient.storage.from('student_records').getPublicUrl(sFileName);
       if (data && data.publicUrl) {
         fullUrl = data.publicUrl;
       }
@@ -4036,6 +4040,7 @@ window.openPdfPreview = async function(url, studentName) {
   const modal = document.getElementById('modal-pdf-preview');
   const container = document.getElementById('pdf-preview-container');
   const title = document.getElementById('pdf-preview-modal-title');
+  const btnDownload = document.getElementById('btn-download-pdf-preview');
   
   if (!container || !modal) {
     window.open(fullUrl, '_blank');
@@ -4044,6 +4049,51 @@ window.openPdfPreview = async function(url, studentName) {
   
   if (title) {
     title.textContent = studentName ? `📄 ${studentName} 학생 생기부 PDF 문서` : '📄 생기부 PDF 문서 열람';
+  }
+
+  if (btnDownload) {
+    btnDownload.onclick = async () => {
+      const sName = studentName ? studentName : '이름없음';
+      const sSchool = studentSchool ? studentSchool : '소속미상';
+      const outName = `[생기부] ${sName}(${sSchool}).pdf`;
+      
+      if (isSupabaseFile && window.supabaseClient) {
+        try {
+          const { data, error } = await window.supabaseClient.storage.from('student_records').download(sFileName);
+          if (error) throw error;
+          if (data) {
+            const blobUrl = URL.createObjectURL(data);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = outName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+            return;
+          }
+        } catch (e) {
+          console.error('Supabase download error:', e);
+        }
+      }
+      
+      try {
+        const res = await fetch(fullUrl);
+        if (!res.ok) throw new Error('Network error');
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = outName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+      } catch(e) {
+        console.error('Fetch download error:', e);
+        window.open(fullUrl, '_blank');
+      }
+    };
   }
   
   modal.classList.add('open');
