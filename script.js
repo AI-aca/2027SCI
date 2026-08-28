@@ -4316,29 +4316,38 @@ window.openPsViewerModal = async function(studentLink) {
         const sSchool = student.school ? student.school : '소속미상';
         const outName = `[자소서] ${sName}(${sSchool}).pdf`;
         
-        // 1. 현재 HTML 상태(다크모드) 및 스타일을 문자열로 완벽히 백업
-        const backupHTML = viewerContent.innerHTML;
-        const backupColor = viewerContent.style.color;
-        const backupBg = viewerContent.style.backgroundColor;
+        // 1. 깜빡임 방지를 위한 가상 복제본(Clone) 생성
+        const clone = viewerContent.cloneNode(true);
         
-        // 2. 인쇄에 최적화된 상태로 원본 DOM 즉시 조작
-        viewerContent.style.color = '#000000';
-        viewerContent.style.backgroundColor = '#ffffff';
+        // 2. 최상단 학생 이름 타이틀 동적 주입
+        const titleEl = document.createElement('h2');
+        titleEl.innerText = `${sName} 학생의 자기소개서`;
+        titleEl.style.textAlign = 'center';
+        titleEl.style.marginBottom = '30px';
+        titleEl.style.color = '#000000';
+        titleEl.style.borderBottom = '2px solid #333';
+        titleEl.style.paddingBottom = '10px';
+        clone.insertBefore(titleEl, clone.firstChild);
         
-        const h4s = viewerContent.querySelectorAll('.ps-print-title');
+        // 3. 복제본 인쇄용 스타일 세탁
+        clone.style.color = '#000000';
+        clone.style.backgroundColor = '#ffffff';
+        clone.style.padding = '20px';
+        
+        const h4s = clone.querySelectorAll('.ps-print-title');
         h4s.forEach(h => {
           h.style.color = '#16a34a';
           h.style.fontWeight = 'bold';
         });
 
-        const prompts = viewerContent.querySelectorAll('.ps-print-prompt');
+        const prompts = clone.querySelectorAll('.ps-print-prompt');
         prompts.forEach(p => {
-          p.style.color = '#333333';
-          p.style.backgroundColor = 'transparent';
+          p.style.color = '#000000';
+          p.style.backgroundColor = '#f3f4f6';
           p.style.borderLeftColor = '#555555';
         });
 
-        const answers = viewerContent.querySelectorAll('.ps-print-answer');
+        const answers = clone.querySelectorAll('.ps-print-answer');
         answers.forEach(a => {
           a.style.backgroundColor = 'transparent';
           a.style.color = '#000000';
@@ -4358,18 +4367,13 @@ window.openPsViewerModal = async function(studentLink) {
               html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
               jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
               pagebreak: { mode: ['css', 'legacy'] }
-            }).from(viewerContent).save();
+            }).from(clone).save(); // 복제본 다이렉트 주입 (백지 버그 방어 및 화면 깜빡임 차단)
           } else {
             alert('PDF 변환 라이브러리를 불러오지 못했습니다.');
           }
         } catch(err) {
           console.error('PDF 다운로드 에러:', err);
           alert('PDF 다운로드 중 오류가 발생했습니다.');
-        } finally {
-          // 3. 작업 완료 직후 원래 HTML과 다크모드 스타일로 즉시 원상복구
-          viewerContent.innerHTML = backupHTML;
-          viewerContent.style.color = backupColor;
-          viewerContent.style.backgroundColor = backupBg;
         }
       };
     }
