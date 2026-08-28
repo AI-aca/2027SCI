@@ -4301,6 +4301,39 @@ window.openPsViewerModal = async function(studentLink) {
     } else {
       viewerContent.innerHTML = '<div style="text-align:center; padding: 50px;" class="text-muted">작성된 자소서 내용이 없습니다.</div>';
     }
+    
+    const btnDownloadPsPdf = document.getElementById('btn-download-ps-pdf');
+    if (btnDownloadPsPdf) {
+      btnDownloadPsPdf.onclick = async () => {
+        const sName = student.name ? student.name : '이름없음';
+        const sSchool = student.school ? student.school : '소속미상';
+        const outName = `[자소서] ${sName}(${sSchool}).pdf`;
+        
+        // 다크모드 방어막: 글자색을 명시적으로 검정색으로 임시 변경
+        const originalColor = viewerContent.style.color;
+        viewerContent.style.color = '#000000';
+        
+        try {
+          if (typeof html2pdf !== 'undefined') {
+            await html2pdf().set({
+              margin: 10,
+              filename: outName,
+              html2canvas: { scale: 2, backgroundColor: '#ffffff' },
+              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(viewerContent).save();
+          } else {
+            alert('PDF 변환 라이브러리를 불러오지 못했습니다.');
+          }
+        } catch(err) {
+          console.error('PDF 다운로드 에러:', err);
+          alert('PDF 다운로드 중 오류가 발생했습니다.');
+        } finally {
+          // 다크모드 색상 원상복구
+          viewerContent.style.color = originalColor;
+        }
+      };
+    }
+    
   } catch(e) {
     viewerContent.innerHTML = `<div style="text-align:center; padding: 50px; color: var(--color-danger);">오류 발생: ${e.message}</div>`;
   }
