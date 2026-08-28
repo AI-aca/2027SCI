@@ -323,6 +323,7 @@ function applyRoleUI(role) {
     });
     const btnUploadPdf = document.getElementById('btn-upload-pdf');
     if (btnUploadPdf) btnUploadPdf.style.display = 'none'; // 학생은 숨김
+    if (document.getElementById('wrapper-hide-hidden')) document.getElementById('wrapper-hide-hidden').style.display = 'none';
 
     
     if (aiFeedbackTab) aiFeedbackTab.style.display = 'none';
@@ -341,6 +342,7 @@ function applyRoleUI(role) {
     if (settingsMenu) settingsMenu.parentNode.style.display = 'none';
     const btnUploadPdf = document.getElementById('btn-upload-pdf');
     if (btnUploadPdf) btnUploadPdf.style.display = 'none'; // 교사는 숨김 (조회만 가능)
+    if (document.getElementById('wrapper-hide-hidden')) document.getElementById('wrapper-hide-hidden').style.display = 'none';
 
     if (aiFeedbackTab) aiFeedbackTab.style.display = 'block';
     document.getElementById('current-role-display').textContent = '일반 교사 계정';
@@ -360,6 +362,7 @@ function applyRoleUI(role) {
     if (settingsMenu) settingsMenu.parentNode.style.display = 'block';
     const btnUploadPdf = document.getElementById('btn-upload-pdf');
     if (btnUploadPdf) btnUploadPdf.style.display = 'block'; // 관리자 보임
+    if (document.getElementById('wrapper-hide-hidden')) document.getElementById('wrapper-hide-hidden').style.display = 'flex';
 
     if (aiFeedbackTab) aiFeedbackTab.style.display = 'block';
     document.getElementById('current-role-display').textContent = '시스템 관리자';
@@ -608,8 +611,12 @@ function renderMainTable() {
   // 2. 바디 데이터 생성
   const searchVal = document.getElementById('search-student').value.toLowerCase();
   const targetSchoolVal = document.getElementById('filter-target-school') ? document.getElementById('filter-target-school').value : '전체';
+  const hideHiddenChecked = document.getElementById('checkbox-hide-hidden') ? document.getElementById('checkbox-hide-hidden').checked : true;
   
   const filtered = STUDENTS_LIST.filter(s => {
+    // 관리자: 체크박스가 켜져있고 학생이 숨김 상태면 제외 (교사/학생은 원천 차단되어 영향 없음)
+    if (hideHiddenChecked && s.is_hidden) return false;
+
     // 학생일 경우 자신의 데이터만 보이도록 강제 필터링
     if (CURRENT_ROLE === '학생' && s.studentPhone !== CURRENT_STUDENT_ID && s.studentLink !== CURRENT_STUDENT_ID) return false;
     
@@ -4345,6 +4352,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('btn-close-ps-viewer-bottom')?.addEventListener('click', () => {
     document.getElementById('modal-ps-viewer').classList.remove('open');
+  });
+  
+  document.getElementById('checkbox-hide-hidden')?.addEventListener('change', () => {
+    if (typeof renderMainTable === 'function') renderMainTable();
   });
   
   document.getElementById('btn-save-memo')?.addEventListener('click', window.saveMemo);

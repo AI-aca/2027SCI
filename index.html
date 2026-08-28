@@ -123,7 +123,10 @@
               <label for="search-student" style="display:none;">학생명 또는 학교 검색</label>
               <input type="text" id="search-student" placeholder="학생명 또는 학교 검색...">
             </div>
-            <div class="filter-actions" id="table-filter-area" style="display: flex; gap: 8px;">
+            <div class="filter-actions" id="table-filter-area" style="display: flex; align-items: center; gap: 8px;">
+              <label id="wrapper-hide-hidden" style="display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--text-muted); cursor: pointer; margin-right: 8px;">
+                <input type="checkbox" id="checkbox-hide-hidden" checked> 숨김학생 감추기
+              </label>
               <select id="filter-target-school" class="form-control" style="width: auto; padding: 4px 8px; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px;">
                 <option value="전체">모든 지원학교</option>
               </select>
