@@ -2027,6 +2027,119 @@ async function openInterviewPractice(studentLink, mode) {
     
     // 모달 렌더링 완료 시 최초 1회 상태 표시줄 강제 업데이트 (레이아웃 Shift 방지)
     updateChangedIndicator();
+
+    // PDF 다운로드 이벤트 바인딩
+    const btnDownloadInterviewPdf = document.getElementById('btn-download-interview-pdf');
+    if (btnDownloadInterviewPdf) {
+      btnDownloadInterviewPdf.onclick = async () => {
+        if (questionSets.length === 0) {
+          alert('생성된 예상 질문이 없어 다운로드할 수 없습니다.');
+          return;
+        }
+
+        const sName = student.name ? student.name : '이름없음';
+        const sSchool = student.school ? student.school : '소속미상';
+        const modeText = isPsMode ? '자소서' : '생기부';
+        const outName = `[${modeText}_예상질문] ${sName}(${sSchool}).pdf`;
+
+        const pdfContainer = document.createElement('div');
+        pdfContainer.style.padding = '20px';
+        pdfContainer.style.fontFamily = 'Pretendard, -apple-system, sans-serif';
+        pdfContainer.style.color = '#000000';
+        pdfContainer.style.backgroundColor = '#ffffff';
+
+        // 기존 자소서 출력 타이틀 CSS 상속
+        const titleEl = document.createElement('h2');
+        titleEl.innerText = `${sName} 학생 면접 예상질문 (${modeText} 기반)`;
+        titleEl.style.textAlign = 'center';
+        titleEl.style.marginBottom = '30px';
+        titleEl.style.color = '#000000';
+        titleEl.style.borderBottom = '2px solid #333';
+        titleEl.style.paddingBottom = '10px';
+        pdfContainer.appendChild(titleEl);
+
+        const table = document.createElement('table');
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.style.tableLayout = 'fixed';
+        
+        const thead = document.createElement('thead');
+        thead.innerHTML = `
+          <tr>
+            <th style="width: 50%; border: 1px solid #ccc; padding: 12px; background-color: #f3f4f6; text-align: center; font-size: 16px;">예상 질문 및 꼬리 질문</th>
+            <th style="width: 50%; border: 1px solid #ccc; padding: 12px; background-color: #f3f4f6; text-align: center; font-size: 16px;">학생 면접 답변</th>
+          </tr>
+        `;
+        table.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+        questionSets.forEach(q => {
+          const tr = document.createElement('tr');
+          tr.style.pageBreakInside = 'avoid'; // 페이지 단락 잘림 방지 (기존 상속)
+          
+          const tdLeft = document.createElement('td');
+          tdLeft.style.border = '1px solid #ccc';
+          tdLeft.style.padding = '15px';
+          tdLeft.style.verticalAlign = 'top';
+          tdLeft.style.fontSize = '14px';
+          tdLeft.style.lineHeight = '1.6';
+          tdLeft.style.wordBreak = 'keep-all';
+          
+          let cleanTitle = (q.titleHtml || q.title).replace(/color:\s*var\(--color-primary\);/g, 'color: #16a34a; font-weight: bold;');
+          
+          tdLeft.innerHTML = `<div style="font-weight: bold; margin-bottom: 10px; color: #16a34a; border-bottom: 1px solid #eee; padding-bottom: 5px;">${cleanTitle}</div><div style="background-color: #f8fafc; border-radius: 4px; padding: 10px; white-space: pre-wrap;">${q.body}</div>`;
+          
+          const tdRight = document.createElement('td');
+          tdRight.style.border = '1px solid #ccc';
+          tdRight.style.padding = '15px';
+          tdRight.style.verticalAlign = 'top';
+          tdRight.style.fontSize = '14px';
+          tdRight.style.lineHeight = '1.6';
+          tdRight.style.whiteSpace = 'pre-wrap';
+          
+          const answerText = (answersObj[q.title] || '').trim();
+          if (answerText) {
+            tdRight.textContent = answerText;
+          } else {
+            tdRight.innerHTML = `<span style="color: #999; font-style: italic;">작성된 답변이 없습니다.</span>`;
+          }
+          
+          tr.appendChild(tdLeft);
+          tr.appendChild(tdRight);
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        pdfContainer.appendChild(table);
+        
+        // 기존 자소서 출력 html2pdf 옵션 완벽 상속 (orientation: portrait 유지)
+        const opt = {
+          margin: 15,
+          filename: outName,
+          image: { type: 'jpeg', quality: 1 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['css', 'legacy'] }
+        };
+
+        const oldText = btnDownloadInterviewPdf.innerHTML;
+        btnDownloadInterviewPdf.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 생성 중...';
+        btnDownloadInterviewPdf.disabled = true;
+
+        try {
+          if (typeof html2pdf !== 'undefined') {
+            await html2pdf().set(opt).from(pdfContainer).save();
+          } else {
+            alert('PDF 변환 라이브러리를 불러오지 못했습니다.');
+          }
+        } catch(err) {
+          console.error("PDF 다운로드 에러:", err);
+          alert('PDF 다운로드 중 오류가 발생했습니다.');
+        } finally {
+          btnDownloadInterviewPdf.innerHTML = oldText;
+          btnDownloadInterviewPdf.disabled = false;
+        }
+      };
+    }
   }
   
   document.getElementById('modal-interview-practice').classList.add('open');
