@@ -2063,8 +2063,7 @@ async function openInterviewPractice(studentLink, mode) {
         table.style.width = '100%';
         table.style.display = 'flex';
         table.style.flexDirection = 'column';
-        table.style.borderTop = '1px solid #ccc';
-        table.style.borderLeft = '1px solid #ccc';
+        // 부모 껍데기 테두리 완전히 소각 (세로줄 찌꺼기 방지)
         
         const thead = document.createElement('div');
         thead.style.display = 'flex';
@@ -2072,18 +2071,18 @@ async function openInterviewPractice(studentLink, mode) {
         thead.style.fontWeight = 'bold';
         thead.style.textAlign = 'center';
         thead.style.fontSize = '13px';
-        thead.style.borderBottom = '1px solid #ccc';
+        thead.style.border = '1px solid #ccc'; // 개별 4면 테두리 자급자족
         
         const th1 = document.createElement('div');
         th1.style.flex = '1';
         th1.style.padding = '8px';
-        th1.style.borderRight = '1px solid #ccc';
+        th1.style.borderRight = '1px solid #ccc'; // 가운데 구분선
         th1.innerText = '예상 질문 및 꼬리 질문';
         
         const th2 = document.createElement('div');
         th2.style.flex = '1';
         th2.style.padding = '8px';
-        th2.style.borderRight = '1px solid #ccc';
+        // 우측 외곽선은 부모(thead)가 담당하므로 제거
         th2.innerText = '학생 면접 답변';
         
         thead.appendChild(th1);
@@ -2094,12 +2093,13 @@ async function openInterviewPractice(studentLink, mode) {
           const row = document.createElement('div');
           row.style.display = 'flex';
           row.style.pageBreakInside = 'avoid'; // 확실한 쪼개짐 방지
-          row.style.borderBottom = '1px solid #ccc';
+          row.style.border = '1px solid #ccc'; // 개별 4면 테두리 자급자족 (페이지 넘어가도 윗선 유지)
+          row.style.marginTop = '-1px'; // 테두리 중복 상쇄 (1px로 겹침)
           
           const tdLeft = document.createElement('div');
           tdLeft.style.flex = '1';
           tdLeft.style.padding = '10px';
-          tdLeft.style.borderRight = '1px solid #ccc';
+          tdLeft.style.borderRight = '1px solid #ccc'; // 가운데 구분선
           tdLeft.style.fontSize = '11px';
           tdLeft.style.lineHeight = '1.6';
           tdLeft.style.wordBreak = 'keep-all';
@@ -2114,7 +2114,7 @@ async function openInterviewPractice(studentLink, mode) {
           const tdRight = document.createElement('div');
           tdRight.style.flex = '1';
           tdRight.style.padding = '10px';
-          tdRight.style.borderRight = '1px solid #ccc';
+          // 우측 외곽선은 부모(row)가 담당하므로 제거
           tdRight.style.fontSize = '11px';
           tdRight.style.lineHeight = '1.6';
           tdRight.style.whiteSpace = 'pre-wrap';
