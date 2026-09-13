@@ -2063,44 +2063,58 @@ async function openInterviewPractice(studentLink, mode) {
         listContainer.style.width = '100%';
         listContainer.style.display = 'block';
 
-        const thead = document.createElement('div');
-        thead.style.display = 'flex';
-        thead.style.backgroundColor = '#f3f4f6';
-        thead.style.fontWeight = 'bold';
-        thead.style.textAlign = 'center';
-        thead.style.fontSize = '13px';
-        thead.style.border = '1px solid #ccc';
-        thead.style.marginBottom = '10px'; // 핵심: 가위질이 빈 공간을 자르도록 유도
+        // 헤더 전용 독립 표 (개별 Table)
+        const theadTable = document.createElement('table');
+        theadTable.style.width = '100%';
+        theadTable.style.borderCollapse = 'collapse';
+        theadTable.style.marginBottom = '15px'; // 문항과의 15px 허공 여백
         
-        const th1 = document.createElement('div');
-        th1.style.flex = '1';
+        const theadTr = document.createElement('tr');
+        
+        const th1 = document.createElement('th');
+        th1.style.width = '50%';
         th1.style.padding = '8px';
-        th1.style.borderRight = '1px solid #ccc';
+        th1.style.border = '1px solid #ccc';
+        th1.style.backgroundColor = '#f3f4f6';
+        th1.style.fontWeight = 'bold';
+        th1.style.textAlign = 'center';
+        th1.style.fontSize = '13px';
         th1.innerText = '예상 질문 및 꼬리 질문';
         
-        const th2 = document.createElement('div');
-        th2.style.flex = '1';
+        const th2 = document.createElement('th');
+        th2.style.width = '50%';
         th2.style.padding = '8px';
+        th2.style.border = '1px solid #ccc';
+        th2.style.backgroundColor = '#f3f4f6';
+        th2.style.fontWeight = 'bold';
+        th2.style.textAlign = 'center';
+        th2.style.fontSize = '13px';
         th2.innerText = '학생 면접 답변';
         
-        thead.appendChild(th1);
-        thead.appendChild(th2);
-        listContainer.appendChild(thead);
+        theadTr.appendChild(th1);
+        theadTr.appendChild(th2);
+        theadTable.appendChild(theadTr);
+        listContainer.appendChild(theadTable);
 
+        // 각 문항을 완벽히 독립된 개별 표(Table)로 생성
         questionSets.forEach(q => {
-          const row = document.createElement('div');
-          row.style.display = 'flex';
-          row.style.pageBreakInside = 'avoid';
-          row.style.border = '1px solid #ccc'; // 개별 박스 4면 테두리 독립
-          row.style.marginBottom = '10px'; // 핵심: 문항 간 10px 간격을 주어 캔버스 가위질이 허공을 지나가게 강제
+          const table = document.createElement('table');
+          table.style.width = '100%';
+          table.style.borderCollapse = 'collapse'; // 내부 선 병합
+          table.style.pageBreakInside = 'avoid'; // 브라우저 고유 인쇄 엔진에 의한 완벽한 파편화 방지
+          table.style.marginBottom = '15px'; // 캔버스 가위질이 허공을 지나가도록 15px 강제 이격
           
-          const tdLeft = document.createElement('div');
-          tdLeft.style.flex = '1';
+          const tbody = document.createElement('tbody');
+          const tr = document.createElement('tr');
+          
+          const tdLeft = document.createElement('td');
+          tdLeft.style.width = '50%';
           tdLeft.style.padding = '10px';
-          tdLeft.style.borderRight = '1px solid #ccc';
+          tdLeft.style.border = '1px solid #ccc'; // 4면 테두리 독립
           tdLeft.style.fontSize = '11px';
           tdLeft.style.lineHeight = '1.6';
           tdLeft.style.wordBreak = 'keep-all';
+          tdLeft.style.verticalAlign = 'top';
           
           let cleanTitle = (q.titleHtml || q.title).replace(/color:\s*var\(--color-primary\);/g, 'color: #16a34a; font-weight: bold;');
           
@@ -2109,12 +2123,14 @@ async function openInterviewPractice(studentLink, mode) {
           
           tdLeft.innerHTML = `<div style="font-weight: bold; margin-bottom: 10px; color: #16a34a; border-bottom: 1px solid #eee; padding-bottom: 5px;">${cleanTitle}</div><div style="background-color: #f8fafc; border-radius: 4px; padding: 8px; white-space: pre-wrap;">${printBody}</div>`;
           
-          const tdRight = document.createElement('div');
-          tdRight.style.flex = '1';
+          const tdRight = document.createElement('td');
+          tdRight.style.width = '50%';
           tdRight.style.padding = '10px';
+          tdRight.style.border = '1px solid #ccc'; // 4면 테두리 독립
           tdRight.style.fontSize = '11px';
           tdRight.style.lineHeight = '1.6';
           tdRight.style.whiteSpace = 'pre-wrap';
+          tdRight.style.verticalAlign = 'top';
           
           const answerText = (answersObj[q.title] || '').trim();
           if (answerText) {
@@ -2123,20 +2139,23 @@ async function openInterviewPractice(studentLink, mode) {
             tdRight.innerHTML = `<span style="color: #999; font-style: italic;">작성된 답변이 없습니다.</span>`;
           }
           
-          row.appendChild(tdLeft);
-          row.appendChild(tdRight);
-          listContainer.appendChild(row);
+          tr.appendChild(tdLeft);
+          tr.appendChild(tdRight);
+          tbody.appendChild(tr);
+          table.appendChild(tbody);
+          
+          listContainer.appendChild(table);
         });
         pdfContainer.appendChild(listContainer);
         
-        // 기존 자소서 출력 html2pdf 옵션 완벽 상속 (orientation: portrait 유지)
+        // 기존 자소서 출력 html2pdf 옵션 상속 및 충돌 원흉(legacy 모드) 완전 파기
         const opt = {
           margin: 15,
           filename: outName,
           image: { type: 'jpeg', quality: 1 },
           html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak: { mode: ['css', 'legacy'] }
+          pagebreak: { mode: ['css'] } // legacy 모드 완전 파기 (브라우저 순정 CSS 규칙만 따름)
         };
 
         const oldText = btnDownloadInterviewPdf.innerHTML;
