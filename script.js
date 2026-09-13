@@ -2059,54 +2059,48 @@ async function openInterviewPractice(studentLink, mode) {
         titleEl.style.fontSize = '15px'; // 전체 밸런스 하향 고정
         pdfContainer.appendChild(titleEl);
 
-        const table = document.createElement('table');
-        table.style.width = '100%';
-        table.style.borderCollapse = 'separate'; // 전역 그리드 찢어짐 방지를 위해 개별 박스 취급
-        table.style.borderSpacing = '0';
+        const listContainer = document.createElement('div');
+        listContainer.style.width = '100%';
+        listContainer.style.display = 'block';
+
+        const thead = document.createElement('div');
+        thead.style.display = 'flex';
+        thead.style.backgroundColor = '#f3f4f6';
+        thead.style.fontWeight = 'bold';
+        thead.style.textAlign = 'center';
+        thead.style.fontSize = '13px';
+        thead.style.border = '1px solid #ccc';
+        thead.style.marginBottom = '10px'; // 핵심: 가위질이 빈 공간을 자르도록 유도
         
-        const thead = document.createElement('thead');
-        const trHead = document.createElement('tr');
-        
-        const th1 = document.createElement('th');
-        th1.style.width = '50%';
+        const th1 = document.createElement('div');
+        th1.style.flex = '1';
         th1.style.padding = '8px';
-        th1.style.border = '1px solid #ccc';
-        th1.style.backgroundColor = '#f3f4f6';
-        th1.style.fontWeight = 'bold';
-        th1.style.textAlign = 'center';
-        th1.style.fontSize = '13px';
+        th1.style.borderRight = '1px solid #ccc';
         th1.innerText = '예상 질문 및 꼬리 질문';
         
-        const th2 = document.createElement('th');
-        th2.style.width = '50%';
+        const th2 = document.createElement('div');
+        th2.style.flex = '1';
         th2.style.padding = '8px';
-        th2.style.border = '1px solid #ccc';
-        th2.style.backgroundColor = '#f3f4f6';
-        th2.style.fontWeight = 'bold';
-        th2.style.textAlign = 'center';
-        th2.style.fontSize = '13px';
         th2.innerText = '학생 면접 답변';
         
-        trHead.appendChild(th1);
-        trHead.appendChild(th2);
-        thead.appendChild(trHead);
-        table.appendChild(thead);
-        
-        const tbody = document.createElement('tbody');
-        table.appendChild(tbody);
+        thead.appendChild(th1);
+        thead.appendChild(th2);
+        listContainer.appendChild(thead);
 
         questionSets.forEach(q => {
-          const tr = document.createElement('tr');
-          tr.style.pageBreakInside = 'avoid'; // 순정 브라우저 렌더링에 의존하는 쪼개짐 방지
+          const row = document.createElement('div');
+          row.style.display = 'flex';
+          row.style.pageBreakInside = 'avoid';
+          row.style.border = '1px solid #ccc'; // 개별 박스 4면 테두리 독립
+          row.style.marginBottom = '10px'; // 핵심: 문항 간 10px 간격을 주어 캔버스 가위질이 허공을 지나가게 강제
           
-          const tdLeft = document.createElement('td');
-          tdLeft.style.width = '50%';
+          const tdLeft = document.createElement('div');
+          tdLeft.style.flex = '1';
           tdLeft.style.padding = '10px';
-          tdLeft.style.border = '1px solid #ccc';
+          tdLeft.style.borderRight = '1px solid #ccc';
           tdLeft.style.fontSize = '11px';
           tdLeft.style.lineHeight = '1.6';
           tdLeft.style.wordBreak = 'keep-all';
-          tdLeft.style.verticalAlign = 'top';
           
           let cleanTitle = (q.titleHtml || q.title).replace(/color:\s*var\(--color-primary\);/g, 'color: #16a34a; font-weight: bold;');
           
@@ -2115,14 +2109,12 @@ async function openInterviewPractice(studentLink, mode) {
           
           tdLeft.innerHTML = `<div style="font-weight: bold; margin-bottom: 10px; color: #16a34a; border-bottom: 1px solid #eee; padding-bottom: 5px;">${cleanTitle}</div><div style="background-color: #f8fafc; border-radius: 4px; padding: 8px; white-space: pre-wrap;">${printBody}</div>`;
           
-          const tdRight = document.createElement('td');
-          tdRight.style.width = '50%';
+          const tdRight = document.createElement('div');
+          tdRight.style.flex = '1';
           tdRight.style.padding = '10px';
-          tdRight.style.border = '1px solid #ccc';
           tdRight.style.fontSize = '11px';
           tdRight.style.lineHeight = '1.6';
           tdRight.style.whiteSpace = 'pre-wrap';
-          tdRight.style.verticalAlign = 'top';
           
           const answerText = (answersObj[q.title] || '').trim();
           if (answerText) {
@@ -2131,11 +2123,11 @@ async function openInterviewPractice(studentLink, mode) {
             tdRight.innerHTML = `<span style="color: #999; font-style: italic;">작성된 답변이 없습니다.</span>`;
           }
           
-          tr.appendChild(tdLeft);
-          tr.appendChild(tdRight);
-          tbody.appendChild(tr);
+          row.appendChild(tdLeft);
+          row.appendChild(tdRight);
+          listContainer.appendChild(row);
         });
-        pdfContainer.appendChild(table);
+        pdfContainer.appendChild(listContainer);
         
         // 기존 자소서 출력 html2pdf 옵션 완벽 상속 (orientation: portrait 유지)
         const opt = {
