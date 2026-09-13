@@ -2106,7 +2106,10 @@ async function openInterviewPractice(studentLink, mode) {
           
           let cleanTitle = (q.titleHtml || q.title).replace(/color:\s*var\(--color-primary\);/g, 'color: #16a34a; font-weight: bold;');
           
-          tdLeft.innerHTML = `<div style="font-weight: bold; margin-bottom: 10px; color: #16a34a; border-bottom: 1px solid #eee; padding-bottom: 5px;">${cleanTitle}</div><div style="background-color: #f8fafc; border-radius: 4px; padding: 8px; white-space: pre-wrap;">${q.body}</div>`;
+          // PDF 인쇄 시 '출제 의도' 부분만 정규식으로 깔끔하게 도려내기
+          let printBody = q.body.replace(/\n\n🎯 출제 의도:[\s\S]*?(?=\n\n🔗 꼬리 질문:|$)/, '');
+          
+          tdLeft.innerHTML = `<div style="font-weight: bold; margin-bottom: 10px; color: #16a34a; border-bottom: 1px solid #eee; padding-bottom: 5px;">${cleanTitle}</div><div style="background-color: #f8fafc; border-radius: 4px; padding: 8px; white-space: pre-wrap;">${printBody}</div>`;
           
           const tdRight = document.createElement('div');
           tdRight.style.flex = '1';
