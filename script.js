@@ -2056,6 +2056,7 @@ async function openInterviewPractice(studentLink, mode) {
         titleEl.style.color = '#000000';
         titleEl.style.borderBottom = '2px solid #333';
         titleEl.style.paddingBottom = '10px';
+        titleEl.style.fontSize = '15px'; // 전체 밸런스 하향 고정
         pdfContainer.appendChild(titleEl);
 
         const table = document.createElement('table');
@@ -2066,8 +2067,8 @@ async function openInterviewPractice(studentLink, mode) {
         const thead = document.createElement('thead');
         thead.innerHTML = `
           <tr>
-            <th style="width: 50%; border: 1px solid #ccc; padding: 12px; background-color: #f3f4f6; text-align: center; font-size: 16px;">예상 질문 및 꼬리 질문</th>
-            <th style="width: 50%; border: 1px solid #ccc; padding: 12px; background-color: #f3f4f6; text-align: center; font-size: 16px;">학생 면접 답변</th>
+            <th style="width: 50%; border: 1px solid #ccc; padding: 8px; background-color: #f3f4f6; text-align: center; font-size: 13px;">예상 질문 및 꼬리 질문</th>
+            <th style="width: 50%; border: 1px solid #ccc; padding: 8px; background-color: #f3f4f6; text-align: center; font-size: 13px;">학생 면접 답변</th>
           </tr>
         `;
         table.appendChild(thead);
@@ -2079,21 +2080,21 @@ async function openInterviewPractice(studentLink, mode) {
           
           const tdLeft = document.createElement('td');
           tdLeft.style.border = '1px solid #ccc';
-          tdLeft.style.padding = '15px';
+          tdLeft.style.padding = '10px';
           tdLeft.style.verticalAlign = 'top';
-          tdLeft.style.fontSize = '14px';
+          tdLeft.style.fontSize = '11px';
           tdLeft.style.lineHeight = '1.6';
           tdLeft.style.wordBreak = 'keep-all';
           
           let cleanTitle = (q.titleHtml || q.title).replace(/color:\s*var\(--color-primary\);/g, 'color: #16a34a; font-weight: bold;');
           
-          tdLeft.innerHTML = `<div style="font-weight: bold; margin-bottom: 10px; color: #16a34a; border-bottom: 1px solid #eee; padding-bottom: 5px;">${cleanTitle}</div><div style="background-color: #f8fafc; border-radius: 4px; padding: 10px; white-space: pre-wrap;">${q.body}</div>`;
+          tdLeft.innerHTML = `<div style="font-weight: bold; margin-bottom: 10px; color: #16a34a; border-bottom: 1px solid #eee; padding-bottom: 5px;">${cleanTitle}</div><div style="background-color: #f8fafc; border-radius: 4px; padding: 8px; white-space: pre-wrap;">${q.body}</div>`;
           
           const tdRight = document.createElement('td');
           tdRight.style.border = '1px solid #ccc';
-          tdRight.style.padding = '15px';
+          tdRight.style.padding = '10px';
           tdRight.style.verticalAlign = 'top';
-          tdRight.style.fontSize = '14px';
+          tdRight.style.fontSize = '11px';
           tdRight.style.lineHeight = '1.6';
           tdRight.style.whiteSpace = 'pre-wrap';
           
@@ -4440,6 +4441,7 @@ window.openPsViewerModal = async function(studentLink) {
         titleEl.style.color = '#000000';
         titleEl.style.borderBottom = '2px solid #333';
         titleEl.style.paddingBottom = '10px';
+        titleEl.style.fontSize = '15px'; // 전체 밸런스 하향 고정
         clone.insertBefore(titleEl, clone.firstChild);
         
         // 3. 복제본 인쇄용 스타일 세탁
@@ -4451,6 +4453,7 @@ window.openPsViewerModal = async function(studentLink) {
         h4s.forEach(h => {
           h.style.color = '#16a34a';
           h.style.fontWeight = 'bold';
+          h.style.fontSize = '13px'; // 머리글 폰트 크기 매핑
         });
 
         const prompts = clone.querySelectorAll('.ps-print-prompt');
@@ -4458,6 +4461,8 @@ window.openPsViewerModal = async function(studentLink) {
           p.style.color = '#000000';
           p.style.backgroundColor = '#f3f4f6';
           p.style.borderLeftColor = '#555555';
+          p.style.fontSize = '11px'; // 연회색 박스 폰트 크기 매핑
+          p.style.padding = '8px';   // 연회색 박스 여백 매핑
         });
 
         const answers = clone.querySelectorAll('.ps-print-answer');
@@ -4466,6 +4471,8 @@ window.openPsViewerModal = async function(studentLink) {
           a.style.color = '#000000';
           a.style.border = '1px solid #999999';
           a.style.whiteSpace = 'normal';
+          a.style.fontSize = '11px'; // 본문 폰트 크기 매핑
+          a.style.padding = '10px';  // 본문 여백 매핑
           
           const lines = a.innerText.split('\n');
           a.innerHTML = lines.map(line => `<div style="page-break-inside: avoid; min-height: 1.4em;">${line}</div>`).join('');
