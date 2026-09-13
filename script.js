@@ -2059,29 +2059,47 @@ async function openInterviewPractice(studentLink, mode) {
         titleEl.style.fontSize = '15px'; // 전체 밸런스 하향 고정
         pdfContainer.appendChild(titleEl);
 
-        const table = document.createElement('table');
+        const table = document.createElement('div');
         table.style.width = '100%';
-        table.style.borderCollapse = 'collapse';
-        table.style.tableLayout = 'fixed';
+        table.style.display = 'flex';
+        table.style.flexDirection = 'column';
+        table.style.borderTop = '1px solid #ccc';
+        table.style.borderLeft = '1px solid #ccc';
         
-        const thead = document.createElement('thead');
-        thead.innerHTML = `
-          <tr>
-            <th style="width: 50%; border: 1px solid #ccc; padding: 8px; background-color: #f3f4f6; text-align: center; font-size: 13px;">예상 질문 및 꼬리 질문</th>
-            <th style="width: 50%; border: 1px solid #ccc; padding: 8px; background-color: #f3f4f6; text-align: center; font-size: 13px;">학생 면접 답변</th>
-          </tr>
-        `;
+        const thead = document.createElement('div');
+        thead.style.display = 'flex';
+        thead.style.backgroundColor = '#f3f4f6';
+        thead.style.fontWeight = 'bold';
+        thead.style.textAlign = 'center';
+        thead.style.fontSize = '13px';
+        thead.style.borderBottom = '1px solid #ccc';
+        
+        const th1 = document.createElement('div');
+        th1.style.flex = '1';
+        th1.style.padding = '8px';
+        th1.style.borderRight = '1px solid #ccc';
+        th1.innerText = '예상 질문 및 꼬리 질문';
+        
+        const th2 = document.createElement('div');
+        th2.style.flex = '1';
+        th2.style.padding = '8px';
+        th2.style.borderRight = '1px solid #ccc';
+        th2.innerText = '학생 면접 답변';
+        
+        thead.appendChild(th1);
+        thead.appendChild(th2);
         table.appendChild(thead);
 
-        const tbody = document.createElement('tbody');
         questionSets.forEach(q => {
-          const tr = document.createElement('tr');
-          tr.style.pageBreakInside = 'avoid'; // 페이지 단락 잘림 방지 (기존 상속)
+          const row = document.createElement('div');
+          row.style.display = 'flex';
+          row.style.pageBreakInside = 'avoid'; // 확실한 쪼개짐 방지
+          row.style.borderBottom = '1px solid #ccc';
           
-          const tdLeft = document.createElement('td');
-          tdLeft.style.border = '1px solid #ccc';
+          const tdLeft = document.createElement('div');
+          tdLeft.style.flex = '1';
           tdLeft.style.padding = '10px';
-          tdLeft.style.verticalAlign = 'top';
+          tdLeft.style.borderRight = '1px solid #ccc';
           tdLeft.style.fontSize = '11px';
           tdLeft.style.lineHeight = '1.6';
           tdLeft.style.wordBreak = 'keep-all';
@@ -2090,10 +2108,10 @@ async function openInterviewPractice(studentLink, mode) {
           
           tdLeft.innerHTML = `<div style="font-weight: bold; margin-bottom: 10px; color: #16a34a; border-bottom: 1px solid #eee; padding-bottom: 5px;">${cleanTitle}</div><div style="background-color: #f8fafc; border-radius: 4px; padding: 8px; white-space: pre-wrap;">${q.body}</div>`;
           
-          const tdRight = document.createElement('td');
-          tdRight.style.border = '1px solid #ccc';
+          const tdRight = document.createElement('div');
+          tdRight.style.flex = '1';
           tdRight.style.padding = '10px';
-          tdRight.style.verticalAlign = 'top';
+          tdRight.style.borderRight = '1px solid #ccc';
           tdRight.style.fontSize = '11px';
           tdRight.style.lineHeight = '1.6';
           tdRight.style.whiteSpace = 'pre-wrap';
@@ -2105,11 +2123,10 @@ async function openInterviewPractice(studentLink, mode) {
             tdRight.innerHTML = `<span style="color: #999; font-style: italic;">작성된 답변이 없습니다.</span>`;
           }
           
-          tr.appendChild(tdLeft);
-          tr.appendChild(tdRight);
-          tbody.appendChild(tr);
+          row.appendChild(tdLeft);
+          row.appendChild(tdRight);
+          table.appendChild(row);
         });
-        table.appendChild(tbody);
         pdfContainer.appendChild(table);
         
         // 기존 자소서 출력 html2pdf 옵션 완벽 상속 (orientation: portrait 유지)
@@ -4474,10 +4491,21 @@ window.openPsViewerModal = async function(studentLink) {
           a.style.fontSize = '11px'; // 본문 폰트 크기 매핑
           a.style.padding = '10px';  // 본문 여백 매핑
           
-          const lines = a.innerText.split('\n');
-          a.innerHTML = lines.map(line => `<div style="page-break-inside: avoid; min-height: 1.4em;">${line}</div>`).join('');
+          // 파괴적인 innerText.split 삭제 -> innerHTML을 유지하되, 
+          // 다크모드용으로 생성된 투명 인라인 스타일을 인쇄용으로 명확하게 세탁
+          let h = a.innerHTML;
+          h = h.replace(/var\(--color-primary\)/g, '#16a34a'); // 제목 색상 고정
+          h = h.replace(/padding:\s*12px;/g, 'padding: 10px;'); // 여백 축소 동기화
+          h = h.replace(/font-size:\s*13px;/g, 'font-size: 11px;'); // 소문항 폰트 축소 동기화
+          h = h.replace(/border:\s*1px\s*solid\s*rgba\(255,255,255,0\.06\)/gi, 'border: 1px solid #ddd; background: #fafafa;'); // 구획선 명확화
+          a.innerHTML = h;
         });
-        
+
+        // 박스 쪼개짐 방지: 개별 줄이 아니라 최상위 부모 껍데기 박스 전체에 통째로 걸기
+        const blocks = clone.querySelectorAll('.ps-print-block');
+        blocks.forEach(b => {
+          b.style.pageBreakInside = 'avoid';
+        });
         try {
           if (typeof html2pdf !== 'undefined') {
             await html2pdf().set({
