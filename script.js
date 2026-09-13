@@ -2063,38 +2063,6 @@ async function openInterviewPractice(studentLink, mode) {
         listContainer.style.width = '100%';
         listContainer.style.display = 'block';
 
-        // 헤더 전용 독립 표 (개별 Table)
-        const theadTable = document.createElement('table');
-        theadTable.style.width = '100%';
-        theadTable.style.borderCollapse = 'collapse';
-        theadTable.style.marginBottom = '15px'; // 문항과의 15px 허공 여백
-        
-        const theadTr = document.createElement('tr');
-        
-        const th1 = document.createElement('th');
-        th1.style.width = '50%';
-        th1.style.padding = '8px';
-        th1.style.border = '1px solid #ccc';
-        th1.style.backgroundColor = '#f3f4f6';
-        th1.style.fontWeight = 'bold';
-        th1.style.textAlign = 'center';
-        th1.style.fontSize = '13px';
-        th1.innerText = '예상 질문 및 꼬리 질문';
-        
-        const th2 = document.createElement('th');
-        th2.style.width = '50%';
-        th2.style.padding = '8px';
-        th2.style.border = '1px solid #ccc';
-        th2.style.backgroundColor = '#f3f4f6';
-        th2.style.fontWeight = 'bold';
-        th2.style.textAlign = 'center';
-        th2.style.fontSize = '13px';
-        th2.innerText = '학생 면접 답변';
-        
-        theadTr.appendChild(th1);
-        theadTr.appendChild(th2);
-        theadTable.appendChild(theadTr);
-        listContainer.appendChild(theadTable);
 
         // 각 문항을 완벽히 독립된 개별 표(Table)로 생성
         questionSets.forEach(q => {
