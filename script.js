@@ -2101,8 +2101,12 @@ async function openInterviewPractice(studentLink, mode) {
           const table = document.createElement('table');
           table.style.width = '100%';
           table.style.borderCollapse = 'collapse'; // 내부 선 병합
-          table.style.pageBreakInside = 'avoid'; // 브라우저 고유 인쇄 엔진에 의한 완벽한 파편화 방지
-          table.style.marginBottom = '15px'; // 캔버스 가위질이 허공을 지나가도록 15px 강제 이격
+          table.style.pageBreakInside = 'avoid';
+          // [절대 1순위 방어 로직] legacy 모드가 박스를 다음 장으로 밀어낼 때, 
+          // 절단면(0px)에 테두리가 닿지 않도록 위쪽 여백(margin-top)을 15px 강제로 부여함.
+          // 가위질이 허공을 자르게 만들어 윗선 증발 및 찌꺼기 번짐을 100% 수학적으로 차단.
+          table.style.marginTop = '15px'; 
+          table.style.marginBottom = '15px';
           
           const tbody = document.createElement('tbody');
           const tr = document.createElement('tr');
@@ -2148,14 +2152,14 @@ async function openInterviewPractice(studentLink, mode) {
         });
         pdfContainer.appendChild(listContainer);
         
-        // 기존 자소서 출력 html2pdf 옵션 상속 및 충돌 원흉(legacy 모드) 완전 파기
+        // [절대 1순위 방어 로직] legacy 모드를 다시 켜서 크롬 엔진의 윗선 자동 삭제 버그 무력화
         const opt = {
           margin: 15,
           filename: outName,
           image: { type: 'jpeg', quality: 1 },
           html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak: { mode: ['css'] } // legacy 모드 완전 파기 (브라우저 순정 CSS 규칙만 따름)
+          pagebreak: { mode: ['css', 'legacy'] } // css와 legacy의 콜라보레이션으로 완벽 밀어내기 및 윗선 보호
         };
 
         const oldText = btnDownloadInterviewPdf.innerHTML;
