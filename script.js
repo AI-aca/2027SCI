@@ -2061,7 +2061,8 @@ async function openInterviewPractice(studentLink, mode) {
 
         const table = document.createElement('table');
         table.style.width = '100%';
-        table.style.borderCollapse = 'collapse'; // 가위질 찌꺼기를 막는 순정 HTML 표 핵심 속성
+        table.style.borderCollapse = 'separate'; // 전역 그리드 찢어짐 방지를 위해 개별 박스 취급
+        table.style.borderSpacing = '0';
         
         const thead = document.createElement('thead');
         const trHead = document.createElement('tr');
