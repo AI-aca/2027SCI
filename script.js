@@ -2094,7 +2094,6 @@ async function openInterviewPractice(studentLink, mode) {
           row.style.display = 'flex';
           row.style.pageBreakInside = 'avoid'; // 확실한 쪼개짐 방지
           row.style.border = '1px solid #ccc'; // 개별 4면 테두리 자급자족 (페이지 넘어가도 윗선 유지)
-          row.style.marginTop = '-1px'; // 테두리 중복 상쇄 (1px로 겹침)
           
           const tdLeft = document.createElement('div');
           tdLeft.style.flex = '1';
