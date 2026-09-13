@@ -2059,48 +2059,53 @@ async function openInterviewPractice(studentLink, mode) {
         titleEl.style.fontSize = '15px'; // 전체 밸런스 하향 고정
         pdfContainer.appendChild(titleEl);
 
-        const table = document.createElement('div');
+        const table = document.createElement('table');
         table.style.width = '100%';
-        table.style.display = 'block'; // 핵심 원인(flex) 제거, 표준 block 흐름으로 복귀
-        // 부모 껍데기 테두리 완전히 소각 (세로줄 찌꺼기 방지)
+        table.style.borderCollapse = 'collapse'; // 가위질 찌꺼기를 막는 순정 HTML 표 핵심 속성
         
-        const thead = document.createElement('div');
-        thead.style.display = 'flex';
-        thead.style.backgroundColor = '#f3f4f6';
-        thead.style.fontWeight = 'bold';
-        thead.style.textAlign = 'center';
-        thead.style.fontSize = '13px';
-        thead.style.border = '1px solid #ccc'; // 개별 4면 테두리 자급자족
+        const thead = document.createElement('thead');
+        const trHead = document.createElement('tr');
         
-        const th1 = document.createElement('div');
-        th1.style.flex = '1';
+        const th1 = document.createElement('th');
+        th1.style.width = '50%';
         th1.style.padding = '8px';
-        th1.style.borderRight = '1px solid #ccc'; // 가운데 구분선
+        th1.style.border = '1px solid #ccc';
+        th1.style.backgroundColor = '#f3f4f6';
+        th1.style.fontWeight = 'bold';
+        th1.style.textAlign = 'center';
+        th1.style.fontSize = '13px';
         th1.innerText = '예상 질문 및 꼬리 질문';
         
-        const th2 = document.createElement('div');
-        th2.style.flex = '1';
+        const th2 = document.createElement('th');
+        th2.style.width = '50%';
         th2.style.padding = '8px';
-        // 우측 외곽선은 부모(thead)가 담당하므로 제거
+        th2.style.border = '1px solid #ccc';
+        th2.style.backgroundColor = '#f3f4f6';
+        th2.style.fontWeight = 'bold';
+        th2.style.textAlign = 'center';
+        th2.style.fontSize = '13px';
         th2.innerText = '학생 면접 답변';
         
-        thead.appendChild(th1);
-        thead.appendChild(th2);
+        trHead.appendChild(th1);
+        trHead.appendChild(th2);
+        thead.appendChild(trHead);
         table.appendChild(thead);
+        
+        const tbody = document.createElement('tbody');
+        table.appendChild(tbody);
 
         questionSets.forEach(q => {
-          const row = document.createElement('div');
-          row.style.display = 'flex';
-          row.style.pageBreakInside = 'avoid'; // 확실한 쪼개짐 방지
-          row.style.border = '1px solid #ccc'; // 개별 4면 테두리 자급자족 (페이지 넘어가도 윗선 유지)
+          const tr = document.createElement('tr');
+          tr.style.pageBreakInside = 'avoid'; // 순정 브라우저 렌더링에 의존하는 쪼개짐 방지
           
-          const tdLeft = document.createElement('div');
-          tdLeft.style.flex = '1';
+          const tdLeft = document.createElement('td');
+          tdLeft.style.width = '50%';
           tdLeft.style.padding = '10px';
-          tdLeft.style.borderRight = '1px solid #ccc'; // 가운데 구분선
+          tdLeft.style.border = '1px solid #ccc';
           tdLeft.style.fontSize = '11px';
           tdLeft.style.lineHeight = '1.6';
           tdLeft.style.wordBreak = 'keep-all';
+          tdLeft.style.verticalAlign = 'top';
           
           let cleanTitle = (q.titleHtml || q.title).replace(/color:\s*var\(--color-primary\);/g, 'color: #16a34a; font-weight: bold;');
           
@@ -2109,13 +2114,14 @@ async function openInterviewPractice(studentLink, mode) {
           
           tdLeft.innerHTML = `<div style="font-weight: bold; margin-bottom: 10px; color: #16a34a; border-bottom: 1px solid #eee; padding-bottom: 5px;">${cleanTitle}</div><div style="background-color: #f8fafc; border-radius: 4px; padding: 8px; white-space: pre-wrap;">${printBody}</div>`;
           
-          const tdRight = document.createElement('div');
-          tdRight.style.flex = '1';
+          const tdRight = document.createElement('td');
+          tdRight.style.width = '50%';
           tdRight.style.padding = '10px';
-          // 우측 외곽선은 부모(row)가 담당하므로 제거
+          tdRight.style.border = '1px solid #ccc';
           tdRight.style.fontSize = '11px';
           tdRight.style.lineHeight = '1.6';
           tdRight.style.whiteSpace = 'pre-wrap';
+          tdRight.style.verticalAlign = 'top';
           
           const answerText = (answersObj[q.title] || '').trim();
           if (answerText) {
@@ -2124,9 +2130,9 @@ async function openInterviewPractice(studentLink, mode) {
             tdRight.innerHTML = `<span style="color: #999; font-style: italic;">작성된 답변이 없습니다.</span>`;
           }
           
-          row.appendChild(tdLeft);
-          row.appendChild(tdRight);
-          table.appendChild(row);
+          tr.appendChild(tdLeft);
+          tr.appendChild(tdRight);
+          tbody.appendChild(tr);
         });
         pdfContainer.appendChild(table);
         
