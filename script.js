@@ -2061,8 +2061,7 @@ async function openInterviewPractice(studentLink, mode) {
 
         const table = document.createElement('div');
         table.style.width = '100%';
-        table.style.display = 'flex';
-        table.style.flexDirection = 'column';
+        table.style.display = 'block'; // 핵심 원인(flex) 제거, 표준 block 흐름으로 복귀
         // 부모 껍데기 테두리 완전히 소각 (세로줄 찌꺼기 방지)
         
         const thead = document.createElement('div');
