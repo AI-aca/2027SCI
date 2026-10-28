@@ -3935,6 +3935,35 @@ function renderPdfList() {
     
     itemContainer.appendChild(btn);
     
+    // 관리자·강사 전용 PDF 다운로드 버튼 (입학요강/기출문제 공통)
+    if (CURRENT_ROLE === '관리자' || CURRENT_ROLE === '교사') {
+      const dlBtn = document.createElement('button');
+      dlBtn.title = 'PDF 다운로드';
+      dlBtn.style.cssText = 'background: transparent; color: var(--color-primary); padding: 10px 12px; border: none; cursor: pointer; border-radius: 4px; transition: background 0.2s;';
+      dlBtn.innerHTML = '<i class="fa-solid fa-download"></i>';
+      dlBtn.onmouseover = () => dlBtn.style.background = 'rgba(255,255,255,0.08)';
+      dlBtn.onmouseout = () => dlBtn.style.background = 'transparent';
+      dlBtn.onclick = async (e) => {
+        e.stopPropagation();
+        try {
+          const res = await fetch(file.url);
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const blob = await res.blob();
+          const objUrl = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = objUrl;
+          a.download = file.name;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(objUrl), 1000);
+        } catch (err) {
+          alert('다운로드 실패: ' + err.message);
+        }
+      };
+      itemContainer.appendChild(dlBtn);
+    }
+    
     if (CURRENT_ROLE === '관리자') {
       const delBtn = document.createElement('button');
       delBtn.title = '이 파일 삭제';
