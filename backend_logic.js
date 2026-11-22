@@ -1,9 +1,10 @@
 // Supabase 클라이언트 초기화
-const SUPABASE_URL = 'https://bwohwhsrwasaykydjhkh.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_Ci19OL6BolLQ-pmsxJsRcA_XtTlIFRb';
+// [2026-11-21] DB 이전: 2027science → YONSEIIE 프로젝트의 science 전용 schema (연세국제 public과 분리)
+const SUPABASE_URL = 'https://seuovjrvfcwvzphvvfga.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNldW92anJ2ZmN3dnpwaHZ2ZmdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NTA5NDMsImV4cCI6MjEwNDQyNjk0M30.a4HIZIRfL2ktUFjYmmaAeai7YblEg8U0ZDztsQmx3wA';
 
 if (typeof window !== 'undefined' && window.supabase && !window.supabaseClient) {
-  window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema: 'science' } });
 }
 /**
  * 공통 Gemini API 호출 모듈 (3단계 폴백 적용)
@@ -827,14 +828,14 @@ async function uploadStudentRecordPdf(studentId, fileObject, fileName) {
     // RLS 정책(UPDATE 권한 누락) 충돌을 방지하기 위해 파일명에 타임스탬프를 부여하여 항상 INSERT가 일어나도록 강제합니다.
     const newFileName = `record_${effectiveLink}_${Date.now()}.pdf`;
     
-    const { data, error } = await window.supabaseClient.storage.from('student_records').upload(newFileName, fileObject, {
+    const { data, error } = await window.supabaseClient.storage.from('sci_student_records').upload(newFileName, fileObject, {
       contentType: 'application/pdf',
       upsert: false
     });
     
     if (error) throw error;
     
-    const { data: publicUrlData } = window.supabaseClient.storage.from('student_records').getPublicUrl(newFileName);
+    const { data: publicUrlData } = window.supabaseClient.storage.from('sci_student_records').getPublicUrl(newFileName);
     const fileUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`;
     
     const updateObj = { record_link: fileUrl };
@@ -1288,7 +1289,7 @@ async function getStudentsList() {
       // 🗂️ 수파베이스 Storage 버킷(생기부 폴더)에 실제 파일이 존재하는지 1회 단일 조회로 교차 검증
       let existingFileSet = new Set();
       try {
-        const { data: storageFiles } = await window.supabaseClient.storage.from('student_records').list('', { limit: 1000 });
+        const { data: storageFiles } = await window.supabaseClient.storage.from('sci_student_records').list('', { limit: 1000 });
         if (storageFiles) {
           storageFiles.forEach(f => existingFileSet.add(f.name));
         }
@@ -1828,7 +1829,7 @@ async function hardDeleteStudent(payload) {
     
     // 1. Storage 버킷에서 해당 학생의 생기부 PDF 파일 삭제
     const fileName = `record_${studentLink}.pdf`;
-    const { error: storageError } = await window.supabaseClient.storage.from('student_records').remove([fileName]);
+    const { error: storageError } = await window.supabaseClient.storage.from('sci_student_records').remove([fileName]);
     if (storageError) {
       console.warn('Storage file deletion error:', storageError);
     }
@@ -1895,7 +1896,7 @@ async function getFilesInFolder(payload) {
 
   try {
     const folderId = payload.folderId || payload;
-    const bucketName = 'school_materials';
+    const bucketName = 'sci_school_materials';
     
     const { data: files, error } = await window.supabaseClient.storage.from(bucketName).list();
     if (error) throw error;
@@ -1941,7 +1942,7 @@ async function getFilesInFolder(payload) {
 async function uploadGeneralPdf(payload) {
   try {
     const { folderId, base64Data, fileName } = payload;
-    let bucketName = 'school_materials';
+    let bucketName = 'sci_school_materials';
     
     const arr = base64Data.split(',');
     const mime = arr[0].match(/:(.*?);/)[1];
@@ -2069,7 +2070,7 @@ window.generateAIChecklist = generateAIChecklist;
 async function deleteGeneralPdf(payload) {
   try {
     const fileName = payload.fileName || payload;
-    const { data, error } = await window.supabaseClient.storage.from('school_materials').remove([fileName]);
+    const { data, error } = await window.supabaseClient.storage.from('sci_school_materials').remove([fileName]);
     if (error) throw error;
     if (!data || data.length === 0) {
       throw new Error("수파베이스 Storage 삭제 권한이 없거나 파일이 존재하지 않습니다. (Storage 정책에서 DELETE 권한이 켜져 있는지 확인하세요.)");

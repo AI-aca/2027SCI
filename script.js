@@ -4188,7 +4188,7 @@ window.openPdfPreview = async function(url, studentName, studentSchool) {
     }
     
     if (window.supabaseClient) {
-      const { data } = window.supabaseClient.storage.from('student_records').getPublicUrl(sFileName);
+      const { data } = window.supabaseClient.storage.from('sci_student_records').getPublicUrl(sFileName);
       if (data && data.publicUrl) {
         fullUrl = data.publicUrl;
       }
@@ -4217,7 +4217,7 @@ window.openPdfPreview = async function(url, studentName, studentSchool) {
       
       if (isSupabaseFile && window.supabaseClient) {
         try {
-          const { data, error } = await window.supabaseClient.storage.from('student_records').download(sFileName);
+          const { data, error } = await window.supabaseClient.storage.from('sci_student_records').download(sFileName);
           if (error) throw error;
           if (data) {
             const blobUrl = URL.createObjectURL(data);
