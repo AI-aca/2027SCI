@@ -64,6 +64,7 @@ window.populateAdmissionYearDropdowns = function() {
       const opt = document.createElement('option');
       opt.value = y.toString();
       opt.textContent = y.toString() + '학년도';
+      if (y === defaultYear) opt.selected = true; // [2026-11-23] 기본값: 올해+1 학년도
       filterYear.appendChild(opt);
     });
   }
@@ -684,7 +685,8 @@ function renderMainTable() {
     
     const matchSearch = s.name.toLowerCase().includes(searchVal) || s.school.toLowerCase().includes(searchVal);
     const matchSchool = (targetSchoolVal === '전체') || (s.targetSchool === targetSchoolVal);
-    const matchYear = (admissionYearVal === '전체') || (s.admissionYear === admissionYearVal);
+    // [2026-11-23] 학생 화면에서는 학년도 필터를 적용하지 않음 (자기 정보가 항상 보이도록)
+    const matchYear = (CURRENT_ROLE === '학생') || (admissionYearVal === '전체') || (s.admissionYear === admissionYearVal);
     return matchSearch && matchSchool && matchYear;
   });
 
