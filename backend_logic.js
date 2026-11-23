@@ -10,6 +10,15 @@ if (typeof window !== 'undefined' && window.supabase && !window.supabaseClient) 
  * 공통 Gemini API 호출 모듈 (3단계 폴백 적용)
  */
 // [2026-11-23] 보안: Gemini 키는 settings 테이블에서 읽지 않고, 로그인한 교사·관리자 비밀번호로 서버 함수(get_gemini_key)에서만 받음
+// [2026-11-23] 학년도별 과학고 문항 세트 고르기 (1순위 학교+학년도, 2순위 학년도 빈 기본 세트, 3순위 학교명만)
+function pickSchoolConfig(list, name, year) {
+  const arr = Array.isArray(list) ? list : [];
+  const n = String(name || '').trim(); const y = String(year || '').trim();
+  return arr.find(s => String(s.name).trim() === n && String(s.admissionYear || '').trim() === y)
+    || arr.find(s => String(s.name).trim() === n && !String(s.admissionYear || '').trim())
+    || arr.find(s => String(s.name).trim() === n);
+}
+
 async function getGeminiKeyRow() {
   let pw = '';
   try { pw = sessionStorage.getItem('user_pw') || ''; } catch (e) {}
@@ -112,7 +121,7 @@ async function generateAIChecklist(studentLink, qNum, statementText) {
       if (settingsRow && settingsRow.setting_value) {
         try {
           const schoolsData = JSON.parse(settingsRow.setting_value);
-          const matchedSchool = schoolsData.find(s => s.name === tSchool);
+          const matchedSchool = pickSchoolConfig(schoolsData, tSchool, student.admission_year);
           if (matchedSchool && matchedSchool.questions) {
             let qRow = matchedSchool.questions.find(q => String(q.label) === String(parsedQNum));
             if (qRow) {
@@ -176,7 +185,7 @@ async function generateAIFeedback(studentId, qNum, statementText) {
     const schools = settingsData ? JSON.parse(settingsData.setting_value) : [];
     
     const tSchool = targetSchoolName || student.targetSchool || student.target_school;
-    const targetSchoolData = schools.find(s => s.name === tSchool);
+    const targetSchoolData = pickSchoolConfig(schools, tSchool, student.admission_year);
     
     let qContent = '';
     if (targetSchoolData && targetSchoolData.questions) {
@@ -291,7 +300,7 @@ async function generateAIQuestions(studentId, type) {
     if (type === '자소서') {
       const { data: settingsData } = await window.supabaseClient.from('settings').select('setting_value').eq('setting_key', 'schools').single();
       const schools = settingsData ? JSON.parse(settingsData.setting_value) : [];
-      const targetSchoolData = schools.find(s => s.name === student.targetSchool);
+      const targetSchoolData = pickSchoolConfig(schools, student.targetSchool || student.target_school, student.admission_year);
       
       const { data: statements } = await window.supabaseClient.from('personal_statements').select('*').eq('student_link', studentId).order('updated_at', { ascending: false });
       let statementText = '';
@@ -1358,7 +1367,8 @@ async function getStudentsList() {
           passRound2: s.result_2nd || '대기',
           passFinal: s.result_final || '대기',
           student_memo: s.student_memo || '',
-          isReference: !!s.is_reference
+          isReference: !!s.is_reference,
+          admissionYear: s.admission_year || ''
         };
       });
     } catch (err) {
@@ -1448,7 +1458,7 @@ async function getPersonalStatementHistory(payload) {
 
         // 기존 현재 학교(targetSchool) qMap 및 currentStateMap 초기화 로직 유지
         if (targetSchool) {
-          const matchedSchool = schoolsData.find(s => s.name === targetSchool);
+          const matchedSchool = pickSchoolConfig(schoolsData, targetSchool, student.admission_year);
           if (matchedSchool && matchedSchool.questions) {
             matchedSchool.questions.forEach(q => {
               const qVal = String(q.label);
@@ -1781,7 +1791,8 @@ async function registerStudent(payload) {
       science_teacher: data.sciTeacher || '',
       student_link: data.studentLink || Math.random().toString(36).substring(2, 14),
       cover_letter_status: '작성전',
-      is_reference: !!data.isReference
+      is_reference: !!data.isReference,
+      admission_year: data.admissionYear || ''
     };
     const { error } = await window.supabaseClient.from('students').insert([insertObj]);
     if (error) throw error;
@@ -1803,7 +1814,8 @@ async function updateStudent(payload) {
       student_contact: studentData.studentPhone || '',
       math_teacher: studentData.mathTeacher || '',
       science_teacher: studentData.sciTeacher || '',
-      is_reference: !!studentData.isReference
+      is_reference: !!studentData.isReference,
+      admission_year: studentData.admissionYear || ''
     };
     const { error } = await window.supabaseClient.from('students').update(updateObj).eq('student_link', originalLink);
     if (error) throw error;

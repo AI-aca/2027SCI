@@ -11,7 +11,7 @@ function extractDriveId(val) {
 }
 /**
  * ==================================================================================
- * ⚙️ [2027 과학고 관리 사이트] 프론트엔드 연동 스크립트 (script.js)
+ * ⚙️ [과학고 관리 사이트] 프론트엔드 연동 스크립트 (script.js)
  * ==================================================================================
  */
 
@@ -37,6 +37,34 @@ window.updateCenterDropdowns = function() {
       opt.value = c;
       opt.textContent = c;
       regCenter.appendChild(opt);
+    });
+  }
+};
+
+// [2026-11-23] 학년도 선택 목록 (외고와 동일: 작년~내후년, 기본값 내년)
+window.populateAdmissionYearDropdowns = function() {
+  const currentYear = new Date().getFullYear();
+  const defaultYear = currentYear + 1;
+  const years = [currentYear - 1, currentYear, currentYear + 1, currentYear + 2];
+  const regYear = document.getElementById('reg-admission-year');
+  if (regYear) {
+    regYear.innerHTML = '';
+    years.forEach(y => {
+      const opt = document.createElement('option');
+      opt.value = y.toString();
+      opt.textContent = y.toString() + '학년도';
+      if (y === defaultYear) opt.selected = true;
+      regYear.appendChild(opt);
+    });
+  }
+  const filterYear = document.getElementById('filter-admission-year');
+  if (filterYear) {
+    filterYear.innerHTML = '<option value="전체">학년도 전체</option>';
+    years.forEach(y => {
+      const opt = document.createElement('option');
+      opt.value = y.toString();
+      opt.textContent = y.toString() + '학년도';
+      filterYear.appendChild(opt);
     });
   }
 };
@@ -259,6 +287,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   detectRoleFromUrl();
   
+  populateAdmissionYearDropdowns();
   await loadSettingsForm();
   loadStudentsData();
   
@@ -414,6 +443,28 @@ function detectRoleFromUrl() {
 /**
  * 전체 학생 데이터 연동 로드
  */
+/**
+ * [2026-11-23] 학년도와 과학고명으로 문항 세트 찾기 (외고와 동일 규칙)
+ * 1순위: 학교명+학년도 일치 / 2순위: 학년도가 비어 있는 기본 세트 / 3순위: 학교명만 일치
+ */
+window.findSchoolConfig = function(name, year) {
+  if (!window.SCHOOL_QUESTIONS_MAP) return null;
+  const safeName = String(name || '').trim();
+  const safeYear = String(year || '').trim();
+  let matched = window.SCHOOL_QUESTIONS_MAP.find(s => String(s.name).trim() === safeName && String(s.admissionYear || '').trim() === safeYear);
+  if (matched) return matched;
+  matched = window.SCHOOL_QUESTIONS_MAP.find(s => String(s.name).trim() === safeName && !String(s.admissionYear || '').trim());
+  if (matched) return matched;
+  return window.SCHOOL_QUESTIONS_MAP.find(s => String(s.name).trim() === safeName);
+};
+// 자소서 창에 열려 있는 학생의 학년도
+window.getActivePsStudentYear = function() {
+  try {
+    const st = (typeof STUDENTS_LIST !== 'undefined' ? STUDENTS_LIST : []).find(x => String(x.studentLink) === String(ACTIVE_PS_STUDENT));
+    return st ? (st.admissionYear || '') : '';
+  } catch (e) { return ''; }
+};
+
 let STUDENTS_LIST = [];
 let PS_PROGRESS_MAP = {}; // 전역 스토어 추가
 let isStudentsDataLoading = true; // 최초 로딩 상태 플래그 추가
@@ -456,6 +507,7 @@ async function loadStudentsData() {
 // 🗂️ 사이드바 메뉴별 동적 컬럼 정보 매핑
 const TABLE_COLUMNS = {
   dashboard: [
+    { label: '학년도', key: 'admissionYear' },
     { label: '센터명', key: 'center' },
     { label: '학생명', key: 'name' },
     { label: '현재 학교', key: 'school' },
@@ -468,6 +520,7 @@ const TABLE_COLUMNS = {
     { label: '관리', key: 'manage' }
   ],
   info: [
+    { label: '학년도', key: 'admissionYear' },
     { label: '센터명', key: 'center' },
     { label: '학생명', key: 'name' },
     { label: '현재 학교', key: 'school' },
@@ -478,6 +531,7 @@ const TABLE_COLUMNS = {
     { label: '학생 연락처', key: 'studentPhone' }
   ],
   record: [
+    { label: '학년도', key: 'admissionYear' },
     { label: '센터명', key: 'center' },
     { label: '학생명', key: 'name' },
     { label: '현재 학교', key: 'school' },
@@ -489,6 +543,7 @@ const TABLE_COLUMNS = {
     { label: 'AI 채점', key: 'recordEval' }
   ],
   ps: [
+    { label: '학년도', key: 'admissionYear' },
     { label: '센터명', key: 'center' },
     { label: '학생명', key: 'name' },
     { label: '현재 학교', key: 'school' },
@@ -499,6 +554,7 @@ const TABLE_COLUMNS = {
     { label: '관리', key: 'manage' }
   ],
   interview: [
+    { label: '학년도', key: 'admissionYear' },
     { label: '센터명', key: 'center' },
     { label: '학생명', key: 'name' },
     { label: '현재 학교', key: 'school' },
@@ -519,11 +575,14 @@ let currentSortDir = 'asc'; // 'asc' or 'desc'
  */
 function copySmsTemplate(center, name, link) {
   const url = window.location.origin + window.location.pathname + '?student=' + link;
+  // [2026-11-23] 설정 > 문자 추가 안내 문구 (비어 있으면 미표시, 외고와 동일)
+  const smsNotice = String(window.SMS_NOTICE || '').replace(/\r\n/g, '\n').trim();
+  const smsNoticeBlock = smsNotice ? smsNotice + '\n' : '';
   const text = `[와이즈만 ${center}]
 
 과학고 합격을 위한 개별 관리 링크를 보내드립니다.
 이 링크를 통해 자소서 작성 및 예상질문 답변을 작성해 주세요.
-* 모바일이 아닌 PC나 노트북 환경의 크롬 브라우저를 권장 드립니다.
+${smsNoticeBlock}* 모바일이 아닌 PC나 노트북 환경의 크롬 브라우저를 권장 드립니다.
 
 ${name} 학생의 링크
 
@@ -553,6 +612,8 @@ function renderMainTable() {
   // 메뉴별 필터 제어
   const filterSchool = document.getElementById('filter-target-school');
   if (filterSchool) filterSchool.style.display = (CURRENT_MENU === 'info' || CURRENT_MENU === 'record' || CURRENT_MENU === 'ps' || CURRENT_MENU === 'interview') ? 'inline-block' : 'none';
+  const filterYear = document.getElementById('filter-admission-year');
+  if (filterYear) filterYear.style.display = (CURRENT_MENU === 'dashboard' || CURRENT_MENU === 'info' || CURRENT_MENU === 'record' || CURRENT_MENU === 'ps' || CURRENT_MENU === 'interview') ? 'inline-block' : 'none';
   
   headerRow.innerHTML = '';
   tbody.innerHTML = '';
@@ -611,6 +672,7 @@ function renderMainTable() {
   // 2. 바디 데이터 생성
   const searchVal = document.getElementById('search-student').value.toLowerCase();
   const targetSchoolVal = document.getElementById('filter-target-school') ? document.getElementById('filter-target-school').value : '전체';
+  const admissionYearVal = document.getElementById('filter-admission-year') ? document.getElementById('filter-admission-year').value : '전체';
   const hideHiddenChecked = document.getElementById('checkbox-hide-hidden') ? document.getElementById('checkbox-hide-hidden').checked : true;
   
   const filtered = STUDENTS_LIST.filter(s => {
@@ -622,7 +684,8 @@ function renderMainTable() {
     
     const matchSearch = s.name.toLowerCase().includes(searchVal) || s.school.toLowerCase().includes(searchVal);
     const matchSchool = (targetSchoolVal === '전체') || (s.targetSchool === targetSchoolVal);
-    return matchSearch && matchSchool;
+    const matchYear = (admissionYearVal === '전체') || (s.admissionYear === admissionYearVal);
+    return matchSearch && matchSchool && matchYear;
   });
 
   // 선택된 컬럼 정렬 적용
@@ -684,7 +747,8 @@ function renderMainTable() {
       const val = student[col.key];
       
       if (student.isReference) {
-        const blockedKeys = ['passRound1', 'passRound2', 'passFinal', 'studentLink', 'studentSms', 'psStatus', 'psProgress', 'psViewer', 'interviewRecord', 'interviewPs', 'manage'];
+        // [2026-11-23] 참고학생도 1차/2차/최종 합불은 표시 (링크·문자·자소서 등은 기존처럼 '-')
+        const blockedKeys = ['studentLink', 'studentSms', 'psStatus', 'psProgress', 'psViewer', 'interviewRecord', 'interviewPs', 'manage'];
         if (blockedKeys.includes(col.key)) {
           if (CURRENT_MENU === 'dashboard' && col.key === 'manage') {
             // 대시보드 메뉴에서는 manage 컬럼(수정 버튼) 예외 허용
@@ -757,7 +821,7 @@ function renderMainTable() {
       }
       else if (col.key === 'psProgress') {
         const targetSchoolName = student.targetSchool;
-        const schoolConf = window.SCHOOL_QUESTIONS_MAP && window.SCHOOL_QUESTIONS_MAP.find(s => s.name === targetSchoolName);
+        const schoolConf = window.findSchoolConfig(targetSchoolName, student.admissionYear);
         
         let totalLimit = 0;
         let totalWritten = 0;
@@ -1034,6 +1098,9 @@ function openEditStudent(studentLink) {
 
   
   document.getElementById('reg-center').value = student.center || '';
+  if (document.getElementById('reg-admission-year')) {
+    document.getElementById('reg-admission-year').value = student.admissionYear || (new Date().getFullYear() + 1).toString();
+  }
   document.getElementById('reg-name').value = student.name || '';
   document.getElementById('reg-school').value = student.school || '';
   document.getElementById('reg-target-school').value = student.targetSchool || '인천';
@@ -1198,7 +1265,7 @@ async function openPersonalStatementModal(studentLink, initialTab = 'manual', ta
   // 동적 질문 바인딩 (학교별 맞춤 문항 연동)
   const schoolMap = window.SCHOOL_QUESTIONS_MAP || [];
   const studentSchool = (student.targetSchool || '').trim();
-  const matchedSchool = schoolMap.find(s => s.name === studentSchool);
+  const matchedSchool = window.findSchoolConfig(studentSchool, student.admissionYear);
   const questions = (matchedSchool && matchedSchool.questions && matchedSchool.questions.length > 0)
     ? matchedSchool.questions
     : [{ label: '문항 1', content: '자기소개서 문항이 설정되지 않았습니다.', limit: '' }];
@@ -1398,9 +1465,9 @@ function switchTab(tabId) {
 /**
  * 글자 수 계산 헬퍼 함수 (공백 포함 여부 옵션 지원)
  */
-function getCharCount(text, schoolName) {
+function getCharCount(text, schoolName, admissionYear) {
   if (!text) return 0;
-  const schoolConf = window.SCHOOL_QUESTIONS_MAP && window.SCHOOL_QUESTIONS_MAP.find(s => s.name === schoolName);
+  const schoolConf = window.findSchoolConfig(schoolName, admissionYear !== undefined ? admissionYear : window.getActivePsStudentYear());
   if (schoolConf && schoolConf.includeSpaces === false) {
     return text.replace(/\s+/g, '').length;
   }
@@ -1560,7 +1627,7 @@ function bindPersonalStatementToSelector(compositeQNum) {
   const countWrap = document.getElementById('ps-main-char-counter-wrap');
   
   const schoolMap = window.SCHOOL_QUESTIONS_MAP || [];
-  const matchedSchool = schoolMap.find(s => s.name === targetSchoolKey);
+  const matchedSchool = window.findSchoolConfig(targetSchoolKey, window.getActivePsStudentYear());
   const qData = matchedSchool && matchedSchool.questions ? matchedSchool.questions.find(q => {
     return window.normalizeQNum(q.label) === window.normalizeQNum(targetQNumKey);
   }) : null;
@@ -2173,7 +2240,7 @@ async function runAIFeedbackAction() {
   const student = STUDENTS_LIST.find(s => String(s.studentLink) === String(ACTIVE_PS_STUDENT));
   const targetSchool = student ? (student.targetSchool || student.target_school) : null;
   let totalLimit = 0;
-  const matchedSchool = window.SCHOOL_QUESTIONS_MAP && window.SCHOOL_QUESTIONS_MAP.find(s => s.name === targetSchool);
+  const matchedSchool = window.findSchoolConfig(targetSchool, student ? student.admissionYear : '');
   if (matchedSchool && matchedSchool.questions) {
     const qData = matchedSchool.questions.find(q => String(q.label) === String(qNum));
     if (qData) {
@@ -2348,6 +2415,11 @@ function bindEventHandlers() {
   if (filterSchool) {
     filterSchool.addEventListener('change', renderMainTable);
   }
+  // [2026-11-23] 학년도 필터 변경 시 즉시 반영
+  const filterAdmissionYear = document.getElementById('filter-admission-year');
+  if (filterAdmissionYear) {
+    filterAdmissionYear.addEventListener('change', renderMainTable);
+  }
   
   // 사이드바 메뉴 클릭 스위칭 연동
   // 설정창 변경사항 추적용 플래그
@@ -2383,7 +2455,7 @@ function bindEventHandlers() {
         'user-guide': '시스템 사용 가이드'
       };
       const subMap = {
-        dashboard: '2027 과학고 지원자 합격 현황 대시보드',
+        dashboard: '과학고 지원자 합격 현황 대시보드',
         info: '학원생 기본 인적사항 및 연락처 조회',
         record: '생활기록부 점수 400점 만점 대비 채점 상세',
         ps: '자기소개서 🚀최종제출 및 이력 롤백 복원 창',
@@ -2553,6 +2625,7 @@ function bindEventHandlers() {
     });
     const refCb = document.getElementById('reg-is-reference');
     if(refCb) refCb.checked = false;
+    if (document.getElementById('reg-admission-year')) document.getElementById('reg-admission-year').value = (new Date().getFullYear() + 1).toString();
     const phoneInput = document.getElementById('reg-student-phone');
     phoneInput.removeAttribute('readonly');
     phoneInput.style.backgroundColor = '';
@@ -2563,6 +2636,7 @@ function bindEventHandlers() {
   document.getElementById('btn-submit-register').onclick = async () => {
     const studentData = {
       center: document.getElementById('reg-center').value,
+      admissionYear: document.getElementById('reg-admission-year') ? document.getElementById('reg-admission-year').value : '',
       name: document.getElementById('reg-name').value,
       school: document.getElementById('reg-school').value,
       targetSchool: document.getElementById('reg-target-school').value,
@@ -2981,7 +3055,8 @@ function bindEventHandlers() {
         '교사': document.getElementById('settings-pw-teacher').value,
         '관리자': document.getElementById('settings-pw-admin').value,
         'GeminiKey': document.getElementById('settings-gemini-key').value,
-        'centers': document.getElementById('settings-centers-list').value
+        'centers': document.getElementById('settings-centers-list').value,
+        'sms_notice': document.getElementById('settings-sms-notice') ? document.getElementById('settings-sms-notice').value : (window.SMS_NOTICE || '')
       };
       
       
@@ -2991,6 +3066,8 @@ function bindEventHandlers() {
       const schoolBlocks = document.querySelectorAll('.school-setting-block');
       schoolBlocks.forEach(block => {
         const sName = block.querySelector('.school-name-input').value.trim();
+        const sYearInput = block.querySelector('.school-year-input');
+        const sYear = sYearInput ? sYearInput.value.trim() : '';
         const includeSpaces = block.querySelector('.school-include-spaces').checked;
         if (sName) {
           const qItems = block.querySelectorAll('.q-item');
@@ -3015,7 +3092,7 @@ function bindEventHandlers() {
               questions.push({ label, content, limit, details });
              }
           });
-          schools.push({ name: sName, includeSpaces, questions });
+          schools.push({ name: sName, admissionYear: sYear, includeSpaces, questions });
         }
       });
       
@@ -3035,7 +3112,8 @@ function bindEventHandlers() {
           if (basic['관리자']) sessionStorage.setItem('user_pw', ACTIVE_ADMIN_PASSWORD);
           
           window.SCHOOL_QUESTIONS_MAP = schools;
-          window.targetSchoolsList = schools.map(s => s.name);
+          window.SMS_NOTICE = basic['sms_notice'] || '';
+          window.targetSchoolsList = Array.from(new Set(schools.map(s => s.name)));
           updateTargetSchoolDropdowns(window.targetSchoolsList);
           renderSettingsSchools();
         } else {
@@ -3056,6 +3134,8 @@ function bindEventHandlers() {
   if (btnSchool) btnSchool.onclick = executeSaveSettings;
   if (btnDrive) btnDrive.onclick = executeSaveSettings;
   if (btnCenters) btnCenters.onclick = executeSaveSettings;
+  const btnSms = document.getElementById('btn-save-settings-sms');
+  if (btnSms) btnSms.onclick = executeSaveSettings;
   
   // 최종 제출하기 (Lock) 버튼 연동
   document.getElementById('btn-submit-ps-final').onclick = async () => {
@@ -3064,7 +3144,7 @@ function bindEventHandlers() {
     // 💡 작성 안 된 문항 검증 로직 시작
     const student = STUDENTS_LIST.find(s => String(s.studentLink) === String(ACTIVE_PS_STUDENT));
     const schoolMap = window.SCHOOL_QUESTIONS_MAP || [];
-    const matchedSchool = schoolMap.find(s => s.name === (student.targetSchool || ''));
+    const matchedSchool = window.findSchoolConfig(student.targetSchool || '', student.admissionYear);
     
     if (!matchedSchool || !matchedSchool.questions || matchedSchool.questions.length === 0) {
       alert('🚨 학교 문항이 설정되지 않았습니다. 제출할 수 없습니다.');
@@ -3200,6 +3280,8 @@ async function loadSettingsForm() {
     
     
     document.getElementById('settings-centers-list').value = basic.centers || '';
+    window.SMS_NOTICE = basic.sms_notice || '';
+    if (document.getElementById('settings-sms-notice')) document.getElementById('settings-sms-notice').value = window.SMS_NOTICE;
     let centersArray = (basic.centers || '').split(',').map(s => s.trim()).filter(s => s);
     if (centersArray.length === 0) centersArray = ['대치본원', '서초본원'];
     SETTINGS_CENTERS = centersArray;
@@ -3212,7 +3294,7 @@ async function loadSettingsForm() {
         { name: '인천과학고', includeSpaces: true, questions: [{label:'문항 1', content:'자기주도학습 경험을 기술하시오.', limit:'1000'}] }
       ];
     }
-    window.targetSchoolsList = window.SCHOOL_QUESTIONS_MAP.map(s => s.name);
+    window.targetSchoolsList = Array.from(new Set(window.SCHOOL_QUESTIONS_MAP.map(s => s.name)));
     
     renderSettingsSchools();
     
@@ -3235,7 +3317,7 @@ async function loadSettingsForm() {
       { name: '경기북과학고', questions: [{label:'문항 1', content:'수학/과학 탐구 활동을 기술하시오.', limit:'1500'}] },
       { name: '인천과학고', questions: [{label:'문항 1', content:'자기주도학습 경험을 기술하시오.', limit:'1000'}] }
     ];
-    window.targetSchoolsList = window.SCHOOL_QUESTIONS_MAP.map(s => s.name);
+    window.targetSchoolsList = Array.from(new Set(window.SCHOOL_QUESTIONS_MAP.map(s => s.name)));
     renderSettingsSchools();
     updateTargetSchoolDropdowns(window.targetSchoolsList);
   }
@@ -3251,6 +3333,8 @@ function syncSchoolInputs() {
     const nameInput = block.querySelector('.school-name-input');
     const includeSpacesCheck = block.querySelector('.school-include-spaces');
     if (nameInput) window.SCHOOL_QUESTIONS_MAP[sIndex].name = nameInput.value;
+    const yearInput = block.querySelector('.school-year-input');
+    if (yearInput) window.SCHOOL_QUESTIONS_MAP[sIndex].admissionYear = yearInput.value.trim();
     if (includeSpacesCheck) window.SCHOOL_QUESTIONS_MAP[sIndex].includeSpaces = includeSpacesCheck.checked;
     
     const qItems = block.querySelectorAll('.q-item');
@@ -3282,10 +3366,45 @@ function renderSettingsSchools() {
   if (!listEl) return;
   listEl.innerHTML = '';
   listEl.style.display = 'block'; // grid 대신 block
+
+  // [2026-11-23] 학년도 필터 (외고와 동일)
+  const allYears = Array.from(new Set(window.SCHOOL_QUESTIONS_MAP.map(s => s.admissionYear || '미지정'))).sort((a,b) => b.localeCompare(a));
+  if (!window.currentYearFilter && allYears.length > 0) {
+    window.currentYearFilter = new Set([allYears[0]]);
+  } else if (!window.currentYearFilter) {
+    window.currentYearFilter = new Set();
+  }
+  if (allYears.length > 0) {
+    const filterDiv = document.createElement('div');
+    filterDiv.style.cssText = "margin-bottom: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 5px; display:flex; gap: 15px; align-items:center; flex-wrap:wrap;";
+    let filterHtml = '<strong style="color:var(--text-muted);"><i class="fa-solid fa-filter"></i> 학년도 필터:</strong>';
+    allYears.forEach(y => {
+       const checked = window.currentYearFilter.has(y) ? 'checked' : '';
+       filterHtml += `<label style="cursor:pointer; display:flex; align-items:center; gap:5px; color:#fff; font-size:14px;"><input type="radio" name="school-year-filter" class="year-filter-cb" value="${y}" ${checked}> ${y === '미지정' ? '미지정 (모든 학년도 공통)' : y + '학년도'}</label>`;
+    });
+    filterDiv.innerHTML = filterHtml;
+    listEl.appendChild(filterDiv);
+    filterDiv.addEventListener('change', (e) => {
+       if (e.target.classList.contains('year-filter-cb')) {
+         window.currentYearFilter = new Set([e.target.value]);
+         const blocks = listEl.querySelectorAll('.school-setting-block');
+         blocks.forEach(block => {
+           const yInput = block.querySelector('.school-year-input');
+           const yVal = (yInput && yInput.value.trim()) || '미지정';
+           block.style.display = window.currentYearFilter.has(yVal) ? 'block' : 'none';
+         });
+         if (typeof window.resizeVisibleSettingsTextareas === 'function') window.resizeVisibleSettingsTextareas();
+       }
+    });
+  }
   
   window.SCHOOL_QUESTIONS_MAP.forEach((school, sIndex) => {
     const sBlock = document.createElement('div');
     sBlock.className = 'school-setting-block';
+    const sYear = school.admissionYear || '미지정';
+    if (window.currentYearFilter && !window.currentYearFilter.has(sYear)) {
+      sBlock.style.display = 'none';
+    }
     sBlock.style.cssText = "border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 12px; background: rgba(0,0,0,0.1);";
     
     // Header
@@ -3294,7 +3413,10 @@ function renderSettingsSchools() {
     header.innerHTML = `
       <div style="display:flex; align-items:center; gap:8px; margin-right: auto;">
         <label style="font-size: 14px; color:var(--text-muted); white-space:nowrap;">과학고명</label>
-        <input type="text" class="form-control school-name-input" value="${school.name}" style="width: 220px; font-size: 16px; font-weight: bold; color: #38bdf8; background-color: rgba(56, 189, 248, 0.05);">
+        <input type="text" class="form-control school-name-input" value="${school.name}" style="width: 200px; font-size: 16px; font-weight: bold; color: #38bdf8; background-color: rgba(56, 189, 248, 0.05);">
+        
+        <label style="font-size: 14px; color:var(--text-muted); white-space:nowrap; margin-left: 5px;">적용 학년도</label>
+        <input type="text" class="form-control school-year-input" value="${school.admissionYear || ''}" placeholder="예: 2027" style="width: 120px; font-size: 16px; font-weight: bold; color: #facc15; text-align: center; background-color: rgba(250, 204, 21, 0.05);">
       </div>
       
       <div style="display:flex; align-items:center; margin-right: 15px;">
@@ -4372,7 +4494,7 @@ window.generateChecklist = async function() {
   const student = STUDENTS_LIST.find(s => String(s.studentLink) === String(ACTIVE_PS_STUDENT));
   const targetSchool = student ? (student.targetSchool || student.target_school) : null;
   let totalLimit = 0;
-  const matchedSchool = window.SCHOOL_QUESTIONS_MAP && window.SCHOOL_QUESTIONS_MAP.find(s => s.name === targetSchool);
+  const matchedSchool = window.findSchoolConfig(targetSchool, student ? student.admissionYear : '');
   if (matchedSchool && matchedSchool.questions) {
     const qData = matchedSchool.questions.find(q => String(q.label) === String(qNum));
     if (qData) {
@@ -4445,7 +4567,7 @@ window.openPsViewerModal = async function(studentLink) {
     const hData = await window.getPersonalStatementHistory(studentLink);
     if (hData && hData.current) {
       const schoolMap = window.SCHOOL_QUESTIONS_MAP || [];
-      const matchedSchool = schoolMap.find(s => s.name === student.targetSchool) || schoolMap[0];
+      const matchedSchool = window.findSchoolConfig(student.targetSchool, student.admissionYear) || schoolMap[0];
       const questions = (matchedSchool && matchedSchool.questions) ? matchedSchool.questions : [];
 
       let html = '';

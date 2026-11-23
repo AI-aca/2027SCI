@@ -47,7 +47,7 @@
     <!-- 1. 좌측 사이드바 -->
     <aside id="sidebar">
       <div class="logo-area">
-        <h1>2027 SCIENCE HS</h1>
+        <h1>SCIENCE HS</h1>
         <p>과학고 합격을 위한 관리 사이트</p>
       </div>
       
@@ -127,6 +127,10 @@
               <label id="wrapper-hide-hidden" style="display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--text-muted); cursor: pointer; margin-right: 8px;">
                 <input type="checkbox" id="checkbox-hide-hidden" checked> 숨김학생 감추기
               </label>
+              <!-- [2026-11-23] 학년도 필터 -->
+              <select id="filter-admission-year" class="form-control" style="width: auto; padding: 4px 8px; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px;">
+                <option value="전체">학년도 전체</option>
+              </select>
               <select id="filter-target-school" class="form-control" style="width: auto; padding: 4px 8px; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px;">
                 <option value="전체">모든 지원학교</option>
               </select>
@@ -169,78 +173,254 @@
       
       <!-- 설정 패널 (기본 숨김) -->
       <div id="settings-panel" style="display: none;">
-        <h3><i class="fa-solid fa-sliders"></i> 시스템 환경 설정</h3>
-        
-        <!-- 비밀번호 설정 그룹 -->
-        <div class="form-group" style="margin-bottom: 20px;">
-          <div class="settings-header" style="margin-bottom: 0;">
-            <h3 style="white-space: nowrap;">비밀번호 설정</h3>
-            <button class="btn-action" id="btn-save-settings-pw" style="padding: 4px 10px; font-size: 14px; margin-right: 15px; white-space: nowrap;"><i class="fa-solid fa-floppy-disk"></i> 비번 저장</button>
-            <div style="display: flex; gap: 10px; flex: 1; align-items: center;">
-              <label for="settings-pw-teacher" style="font-size: 13px; color: var(--text-muted); white-space: nowrap; margin: 0;">교사(일반) 비밀번호</label>
-              <input type="password" id="settings-pw-teacher" class="form-control" placeholder="바꿀 때만 새 비밀번호 입력 (현재 비밀번호는 표시되지 않음)" autocomplete="new-password" style="flex: 1;">
-              <label for="settings-pw-admin" style="font-size: 13px; color: var(--text-muted); white-space: nowrap; margin: 0; margin-left: 10px;">관리자 비밀번호</label>
-              <input type="password" id="settings-pw-admin" class="form-control" placeholder="바꿀 때만 새 비밀번호 입력 (현재 비밀번호는 표시되지 않음)" autocomplete="new-password" style="flex: 1;">
-            </div>
+
+        <!-- [2026-11-23] 과학고 설정 화면 탭 개편: 외고 v2와 같은 구조 (공통과제 제외). 기존 입력칸·버튼 ID 그대로 유지 -->
+        <style>
+          #settings-panel .shead { position: sticky; top: -24px; z-index: 20; background: #0f172a; margin: -24px -24px 18px -24px; padding: 18px 24px 0 24px; border-radius: 14px 14px 0 0; border-bottom: 1px solid var(--border-color); }
+          #settings-panel .shead-top { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+          #settings-panel .shead-top h3 { margin: 0; flex: 1; }
+          #settings-panel .shead .sdirty { font-size: 14px; font-weight: 600; color: var(--color-warning); }
+          #settings-panel .stab-nav { display: flex; gap: 6px; flex-wrap: wrap; }
+          #settings-panel .stab-btn { background: transparent; border: 1px solid transparent; border-bottom: none; color: var(--text-muted); padding: 10px 16px; font-size: 15px; font-weight: 600; border-radius: 8px 8px 0 0; cursor: pointer; }
+          #settings-panel .stab-btn:hover { color: var(--text-main); }
+          #settings-panel .stab-btn.active { color: var(--text-main); background: rgba(0, 168, 134, 0.15); border-color: var(--border-color); }
+          #settings-panel .stab-panel { display: none; }
+          #settings-panel .stab-panel.active { display: block; }
+          #settings-panel .scard { border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 18px; margin-bottom: 12px; background: rgba(15, 23, 42, 0.35); }
+          #settings-panel .scard-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+          #settings-panel .scard h4 { margin: 0 0 4px 0; font-size: 16px; }
+          #settings-panel .sdesc { font-size: 15px; color: #cbd5e1; margin: 0 0 10px 0; line-height: 1.5; }
+          #settings-panel .scard-head .sdesc { margin-bottom: 0; }
+          #settings-panel .srow { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+          #settings-panel .srow:last-child { margin-bottom: 0; }
+          #settings-panel .srow label { width: 150px; flex-shrink: 0; font-size: 15px; color: #cbd5e1; margin: 0; }
+          #settings-panel .sms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+          #settings-panel .sms-sub { font-size: 14px; color: #cbd5e1; margin-bottom: 6px; font-weight: 600; }
+          #settings-panel .sms-preview { white-space: pre-wrap; word-break: break-all; background: #1e293b; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 14px; font-size: 14px; line-height: 1.6; color: var(--text-main); }
+          #settings-panel .sms-preview mark { background: rgba(16, 185, 129, 0.25); color: #6ee7b7; border-radius: 3px; padding: 0 2px; }
+          @media (max-width: 900px) { #settings-panel .sms-grid { grid-template-columns: 1fr; } }
+          /* 버튼·입력칸 크기 통일 (설정 화면 안에서만 적용) */
+          #settings-panel button.btn-action { height: 38px !important; min-width: 38px; padding: 0 14px !important; font-size: 14px !important; line-height: 1 !important; display: inline-flex !important; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; border-radius: 8px; box-sizing: border-box; }
+          #settings-panel input[type="text"].form-control, #settings-panel input[type="number"].form-control, #settings-panel input[type="password"].form-control { height: 38px !important; padding-top: 0 !important; padding-bottom: 0 !important; box-sizing: border-box; }
+          #settings-panel #settings-school-list textarea.q-content, #settings-panel #settings-assignment-list textarea { min-height: 38px !important; }
+          #settings-panel #settings-save-current { height: 40px !important; padding: 0 20px !important; font-size: 15px !important; font-weight: 700; }
+          #settings-panel #settings-save-current.shide { display: none !important; }
+        </style>
+
+        <div class="shead">
+          <div class="shead-top">
+            <h3><i class="fa-solid fa-sliders"></i> 시스템 환경 설정</h3>
+            <span class="sdirty"></span>
+            <button type="button" class="btn-action" id="settings-save-current"><i class="fa-solid fa-floppy-disk"></i> <span class="slabel">기본 설정 저장</span></button>
+          </div>
+          <div class="stab-nav" role="tablist">
+            <button type="button" class="stab-btn active" data-stab="basic"><i class="fa-solid fa-gear"></i> 기본 설정</button>
+            <button type="button" class="stab-btn" data-stab="school"><i class="fa-solid fa-school"></i> 자소서 문항</button>
+            <button type="button" class="stab-btn" data-stab="sms"><i class="fa-solid fa-comment-sms"></i> 문자·AI</button>
+            <button type="button" class="stab-btn" data-stab="backup"><i class="fa-solid fa-database"></i> 백업</button>
           </div>
         </div>
-        
-        <hr>
-        
-        <!-- API 연동 설정 그룹 -->
-        <div class="form-group" style="margin-bottom: 20px;">
-          <div class="settings-header" style="margin-bottom: 0;">
-            <h3 style="white-space: nowrap;">Gemini API (AI 첨삭/평가)</h3>
-            <button class="btn-action" id="btn-save-settings-api" style="padding: 4px 10px; font-size: 14px; margin-right: 15px; white-space: nowrap;"><i class="fa-solid fa-floppy-disk"></i> API키 저장</button>
-            <div style="display: flex; gap: 10px; flex: 1; align-items: center;">
-              <label for="settings-gemini-key" style="font-size: 13px; color: var(--text-muted); white-space: nowrap; margin: 0;">Gemini API Key</label>
-              <input type="password" id="settings-gemini-key" class="form-control" placeholder="등록됨 · 바꿀 때만 새 키 입력" autocomplete="off" style="flex: 1;">
+
+        <!-- 탭 1: 기본 설정 (비밀번호, 센터명) -->
+        <section class="stab-panel active" data-stab-panel="basic">
+          <div class="scard">
+            <h4>비밀번호</h4>
+            <p class="sdesc">교사: 학생 관리·첨삭 / 관리자: 설정까지 사용</p>
+            <div class="srow">
+              <label for="settings-pw-teacher">교사(일반) 비밀번호</label>
+              <input type="password" id="settings-pw-teacher" class="form-control" placeholder="바꿀 때만 새 비밀번호 입력 (현재 비밀번호는 표시되지 않음)" autocomplete="new-password">
+            </div>
+            <div class="srow">
+              <label for="settings-pw-admin">관리자 비밀번호</label>
+              <input type="password" id="settings-pw-admin" class="form-control" placeholder="바꿀 때만 새 비밀번호 입력 (현재 비밀번호는 표시되지 않음)" autocomplete="new-password">
             </div>
           </div>
-        </div>
-        
-        <hr>
-        <div class="form-group" style="margin-bottom: 20px;">
-          <div class="settings-header" style="margin-bottom: 10px;">
-            <h3 style="white-space: nowrap;">과학고별 자소서 문항 및 글자수</h3>
-            <button class="btn-action" id="btn-save-settings-school" style="padding: 4px 10px; font-size: 14px;"><i class="fa-solid fa-floppy-disk"></i> 과학고 문항 저장</button>
-            <div style="flex: 1; text-align: right;">
-              <button class="btn-action" id="btn-add-school" style="padding: 6px 12px; font-size: 14px; background-color: #8b5cf6;"><i class="fa-solid fa-plus"></i> 새로운 과학고 추가하기</button>
+          <div class="scard">
+            <h4>센터명</h4>
+            <p class="sdesc">학생 등록창의 센터 목록입니다. 여러 개는 콤마(,)로 구분</p>
+            <textarea id="settings-centers-list" class="form-control" placeholder="예: 대치본원, 서초본원, 송파본원" style="height: 44px; resize: vertical;"></textarea>
+          </div>
+          <div style="display: none;">
+            <button class="btn-action" id="btn-save-settings-pw">설정 저장</button>
+            <button class="btn-action" id="btn-save-settings-centers">센터명 저장</button>
+          </div>
+        </section>
+
+        <!-- 탭 2: 학교별 자소서 문항 -->
+        <section class="stab-panel" data-stab-panel="school">
+          <div class="scard">
+            <div class="scard-head">
+              <div>
+                <h4>과학고별 자소서 문항 및 글자수</h4>
+                <p class="sdesc">학생의 지원 과학고와 학년도에 맞춰 자소서 창에 나오는 문항입니다. 적용 학년도가 비어 있으면 모든 학년도에 쓰입니다.</p>
+              </div>
+              <button class="btn-action" id="btn-add-school" style="background-color: #8b5cf6;"><i class="fa-solid fa-plus"></i> 새로운 과학고 추가하기</button>
             </div>
           </div>
           <div id="settings-school-list" style="display: block; margin-top: 10px;">
             <!-- script.js에서 동적 주입 -->
           </div>
-        </div>
-        
-        <hr>
-        <!-- 센터명 리스트 관리 설정 -->
-        <div class="form-group" style="margin-bottom: 20px;">
-          <div class="settings-header" style="margin-bottom: 0;">
-            <h3 style="white-space: nowrap;">센터명 리스트 관리</h3>
-            <button class="btn-action" id="btn-save-settings-centers" style="padding: 4px 10px; font-size: 14px; margin-right: 15px; white-space: nowrap;"><i class="fa-solid fa-floppy-disk"></i> 센터명 저장</button>
-            <div style="display: flex; gap: 10px; flex: 1; align-items: center;">
-              <label for="settings-centers-list" style="font-size: 13px; color: var(--text-muted); white-space: nowrap; margin: 0;">콤마(,)로 구분하여 입력</label>
-              <textarea id="settings-centers-list" class="form-control" placeholder="예: 대치본원, 서초본원, 송파본원" style="flex: 1; resize: none; height: 38px; padding-top: 8px; overflow: hidden;"></textarea>
-            </div>
+          <div style="display: none;">
+            <button class="btn-action" id="btn-save-settings-school">자소서 문항 저장</button>
           </div>
-        </div>
-        
-        <hr>
-        <!-- 데이터베이스 백업 및 관리 -->
-        <div class="form-group" style="margin-bottom: 20px;">
-          <div class="settings-header" style="margin-bottom: 0;">
-            <h3 style="white-space: nowrap;"><i class="fa-solid fa-database"></i> 데이터베이스 백업 관리</h3>
-            <button class="btn-action" style="padding: 6px 12px; font-size: 14px; background-color: var(--color-danger);" onclick="verifyBackupPassword()">전체 테이블 CSV 백업창 열기</button>
-            <div style="display: flex; gap: 10px; flex: 1; align-items: center; justify-content: flex-end;">
-              <span style="font-size: 13px; color: var(--text-muted);">※ 안전한 브라우저 변환을 통해 대용량 테이블 데이터를 개별 파싱하여 추출합니다.</span>
-            </div>
-          </div>
-        </div>
+        </section>
 
-          <!-- 구글 연동 완전 삭제됨 -->
+        <!-- 탭 3: 문자·AI -->
+        <section class="stab-panel" data-stab-panel="sms">
+          <div class="scard">
+            <h4>문자 추가 안내</h4>
+            <p class="sdesc">여기 입력한 문구가 오른쪽 문자 안의 초록색 위치에 들어갑니다. 비워두면 안 들어갑니다.</p>
+            <div class="sms-grid">
+              <div>
+                <div class="sms-sub">추가 문구 입력</div>
+                <textarea id="settings-sms-notice" class="form-control" placeholder="예: * 자소서는 11월 21일(토) 자소서 이론 수업을 들은 후, 아래 링크에 접속하여 작성해 주세요." style="height: 120px; resize: vertical;"></textarea>
+              </div>
+              <div>
+                <div class="sms-sub">실제 나가는 문자 미리보기 (학생 이름·링크는 예시)</div>
+                <div class="sms-preview" id="settings-sms-preview"></div>
+              </div>
+            </div>
+          </div>
+          <div class="scard">
+            <h4>Gemini API 키 (AI 첨삭·평가)</h4>
+            <p class="sdesc">AI 도움받기·체크리스트·생기부 채점·예상질문 생성에 사용</p>
+            <input type="password" id="settings-gemini-key" class="form-control" placeholder="등록됨 · 바꿀 때만 새 키 입력" autocomplete="off">
+          </div>
+          <div style="display: none;">
+            <button class="btn-action" id="btn-save-settings-sms">설정 저장</button>
+            <button class="btn-action" id="btn-save-settings-api">API키 저장</button>
+          </div>
+        </section>
+
+        <!-- 탭 4: 백업 -->
+        <section class="stab-panel" data-stab-panel="backup">
+          <div class="scard">
+            <div class="scard-head">
+              <div>
+                <h4><i class="fa-solid fa-database"></i> 데이터베이스 백업</h4>
+                <p class="sdesc">전체 데이터를 CSV로 내려받습니다. (관리자 비밀번호 확인)</p>
+              </div>
+              <button class="btn-action" style="background-color: var(--color-danger);" onclick="verifyBackupPassword()">전체 테이블 CSV 백업창 열기</button>
+            </div>
+          </div>
+        </section>
+
+        <script>
+          (function () {
+            var panel = document.getElementById('settings-panel');
+            if (!panel) return;
+            var SAVE_MAP = {
+              basic: { label: '기본 설정 저장', target: 'btn-save-settings-pw' },
+              school: { label: '자소서 문항 저장', target: 'btn-save-settings-school' },
+              sms: { label: '문자·AI 저장', target: 'btn-save-settings-sms' }
+            };
+            var currentTab = 'basic';
+            var saveBtn = document.getElementById('settings-save-current');
+
+            // 문항·과제 입력칸 높이: 한 줄이면 모두 같은 높이, 내용이 길면 그만큼만 늘어남
+            function fitTextareas() {
+              panel.querySelectorAll('#settings-assignment-list textarea, #settings-school-list textarea.q-content').forEach(function (ta) {
+                if (ta.getAttribute('rows') !== '1') ta.setAttribute('rows', '1');
+                if (ta.offsetParent !== null) {
+                  ta.style.height = 'auto';
+                  ta.style.height = (ta.scrollHeight + 2) + 'px';
+                }
+              });
+            }
+            var fitTimer = null;
+            function fitSoon() {
+              clearTimeout(fitTimer);
+              fitTimer = setTimeout(fitTextareas, 80);
+            }
+            ['settings-school-list', 'settings-assignment-list'].forEach(function (id) {
+              var el = document.getElementById(id);
+              if (el && window.MutationObserver) new MutationObserver(fitSoon).observe(el, { childList: true, subtree: true });
+            });
+            panel.addEventListener('input', function (e) {
+              if (e.target && e.target.tagName === 'TEXTAREA' && e.target.getAttribute('rows') === '1') {
+                e.target.style.height = 'auto';
+                e.target.style.height = (e.target.scrollHeight + 2) + 'px';
+              }
+            });
+            window.addEventListener('resize', fitSoon);
+
+            // 문자 미리보기: 실제 [문자] 버튼과 같은 함수(copySmsTemplate)로 문구를 만들어 보여줌 (복사는 하지 않음)
+            var smsInput = document.getElementById('settings-sms-notice');
+            var smsPreview = document.getElementById('settings-sms-preview');
+            function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+            function buildSmsText(notice) {
+              if (typeof copySmsTemplate !== 'function' || !navigator.clipboard) return null;
+              var captured = null;
+              var clip = navigator.clipboard;
+              var hadOwn = Object.prototype.hasOwnProperty.call(clip, 'writeText');
+              var oldOwn = clip.writeText;
+              var oldNotice = window.SMS_NOTICE;
+              try {
+                clip.writeText = function (t) { captured = t; return new Promise(function () {}); };
+                window.SMS_NOTICE = notice;
+                copySmsTemplate('OO센터', '홍길동', '예시링크');
+              } catch (e) {
+                captured = null;
+              } finally {
+                if (hadOwn) clip.writeText = oldOwn; else delete clip.writeText;
+                window.SMS_NOTICE = oldNotice;
+              }
+              return captured;
+            }
+            function updateSmsPreview() {
+              if (!smsInput || !smsPreview) return;
+              var notice = String(smsInput.value || '').replace(/\r\n/g, '\n').trim();
+              var text = buildSmsText(smsInput.value || '');
+              if (text === null) { smsPreview.textContent = '(미리보기를 불러오지 못했습니다)'; return; }
+              var idx = notice ? text.indexOf(notice) : -1;
+              if (idx >= 0) {
+                smsPreview.innerHTML = esc(text.slice(0, idx)) + '<mark>' + esc(notice) + '</mark>' + esc(text.slice(idx + notice.length));
+              } else {
+                smsPreview.textContent = text;
+              }
+            }
+            if (smsInput) smsInput.addEventListener('input', updateSmsPreview);
+            var lastSmsVal = null;
+
+            function showTab(key, skipConfirm) {
+              if (!skipConfirm && key !== currentTab && window.isSettingsDirty) {
+                if (!confirm('저장하지 않은 변경이 있습니다.\n오른쪽 위 저장 버튼으로 먼저 저장하는 것을 권장합니다.\n\n저장하지 않고 다른 탭으로 이동할까요?')) return;
+              }
+              currentTab = key;
+              panel.querySelectorAll('.stab-btn').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-stab') === key); });
+              panel.querySelectorAll('.stab-panel').forEach(function (p) { p.classList.toggle('active', p.getAttribute('data-stab-panel') === key); });
+              var m = SAVE_MAP[key];
+              if (saveBtn) {
+                saveBtn.classList.toggle('shide', !m);
+                if (m) saveBtn.querySelector('.slabel').textContent = m.label;
+              }
+              try { sessionStorage.setItem('settings_tab', key); } catch (e) {}
+              fitSoon();
+              if (key === 'sms') updateSmsPreview();
+            }
+            if (saveBtn) {
+              saveBtn.addEventListener('click', function () {
+                var m = SAVE_MAP[currentTab];
+                var target = m && document.getElementById(m.target);
+                if (target) target.click();
+              });
+            }
+            panel.querySelectorAll('.stab-btn').forEach(function (b) {
+              b.addEventListener('click', function () { showTab(b.getAttribute('data-stab')); });
+            });
+            var saved = null;
+            try { saved = sessionStorage.getItem('settings_tab'); } catch (e) {}
+            showTab((saved && panel.querySelector('.stab-btn[data-stab="' + saved + '"]')) ? saved : 'basic', true);
+            setInterval(function () {
+              var msg = window.isSettingsDirty ? '● 저장되지 않은 변경이 있습니다' : '';
+              panel.querySelectorAll('.sdirty').forEach(function (el) { if (el.textContent !== msg) el.textContent = msg; });
+              // 설정을 불러온 뒤(값이 코드로 채워진 경우)에도 미리보기 갱신
+              if (smsInput && smsInput.value !== lastSmsVal) { lastSmsVal = smsInput.value; if (currentTab === 'sms') updateSmsPreview(); }
+            }, 500);
+          })();
+        </script>
       </div>
-      
+
       <!-- 사용안내 패널 -->
       <div id="user-guide-panel" style="display: none;" class="view-panel">
 
@@ -347,6 +527,13 @@
             <label for="reg-center">센터명 <span style="color: var(--color-danger); font-size: 0.85em; font-weight: normal;">(필수)</span></label>
             <select id="reg-center">
               <option value="">센터 선택</option>
+            </select>
+          </div>
+          <!-- [2026-11-23] 학년도 (입학년도) -->
+          <div class="form-group">
+            <label for="reg-admission-year">학년도 (입학년도) <span style="color: var(--color-danger); font-size: 0.85em; font-weight: normal;">(필수)</span></label>
+            <select id="reg-admission-year">
+              <!-- JS dynamically fills -->
             </select>
           </div>
           <div class="form-group">
